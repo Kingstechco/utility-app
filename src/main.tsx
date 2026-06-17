@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowDownLeft,
@@ -27,6 +27,24 @@ import "./styles.css";
 type Screen = "home" | "recharge" | "buy" | "usage" | "ledger" | "control";
 type Utility = "Electricity" | "Water";
 type PaymentMethod = "Instant EFT" | "Card" | "Manual EFT" | "Retail";
+
+interface Token {
+  date: string;
+  amount: number;
+  token: string;
+  units: number;
+  utility: Utility;
+}
+
+interface Transaction {
+  id: string;
+  date: string;
+  label: string;
+  detail: string;
+  amount: number;
+  in: boolean;
+  utility?: Utility;
+}
 
 /* ─── Brand Tokens ────────────────────────────────────────────────────── */
 const C = {
@@ -57,13 +75,23 @@ const C = {
 };
 
 /* ─── Data ────────────────────────────────────────────────────────────── */
-const tokens = [
-  { date: "12 Jun", amount: 300, token: "0736 4844 3944 8209 4274", units: 60.4, utility: "Electricity" as Utility },
-  { date: "12 Jun", amount: 167, token: "0841 0205 5352 3480 5042", units: 33.6, utility: "Electricity" as Utility },
-  { date: "11 Jun", amount: 80,  token: "7002 3413 1105 8044 4504", units: 16.1, utility: "Electricity" as Utility },
+const PRICE_PER_UNIT: Record<Utility, number> = { Electricity: 4.97, Water: 22.4 };
+const SPEND_LIMIT = 10000;
+
+const SEED_TOKENS: Token[] = [
+  { date: "12 Jun", amount: 300, token: "0736 4844 3944 8209 4274", units: 60.40, utility: "Electricity" },
+  { date: "12 Jun", amount: 167, token: "0841 0205 5352 3480 5042", units: 33.60, utility: "Electricity" },
+  { date: "11 Jun", amount: 80,  token: "7002 3413 1105 8044 4504", units: 16.10, utility: "Electricity" },
 ];
 
-const usage = [
+const SEED_TXS: Transaction[] = [
+  { id: "t1", date: "13 Jun", label: "Wallet top-up",     detail: "Manual EFT",   amount: 550, in: true  },
+  { id: "t2", date: "12 Jun", label: "Electricity token", detail: "60.40 units",  amount: 300, in: false, utility: "Electricity" },
+  { id: "t3", date: "12 Jun", label: "Electricity token", detail: "33.60 units",  amount: 167, in: false, utility: "Electricity" },
+  { id: "t4", date: "01 Jun", label: "Hosting",           detail: "Tenant alloc", amount: 90,  in: false },
+];
+
+const usageData = [
   { day: "M", water: 42, electricity: 58 },
   { day: "T", water: 54, electricity: 62 },
   { day: "W", water: 36, electricity: 71 },
@@ -73,18 +101,11 @@ const usage = [
   { day: "S", water: 38, electricity: 44 },
 ];
 
-const transactions = [
-  { date: "13 Jun", label: "Wallet top-up",    detail: "Manual EFT",   amount: 550, in: true  },
-  { date: "12 Jun", label: "Electricity token", detail: "60.40 units",  amount: 300, in: false },
-  { date: "12 Jun", label: "Electricity token", detail: "33.60 units",  amount: 167, in: false },
-  { date: "01 Jun", label: "Hosting",           detail: "Tenant alloc", amount: 90,  in: false },
-];
-
 const methods: Array<{ name: PaymentMethod; fee: string; icon: React.ElementType }> = [
-  { name: "Instant EFT", fee: "1.6% min R1.50",  icon: Smartphone  },
-  { name: "Card",        fee: "2.95% + R1.25",   icon: CreditCard  },
-  { name: "Manual EFT", fee: "R3.50 flat",       icon: Landmark    },
-  { name: "Retail",     fee: "3.9% min R8.00",   icon: ReceiptText },
+  { name: "Instant EFT", fee: "1.6% min R1.50", icon: Smartphone  },
+  { name: "Card",        fee: "2.95% + R1.25",  icon: CreditCard  },
+  { name: "Manual EFT", fee: "R3.50 flat",      icon: Landmark    },
+  { name: "Retail",     fee: "3.9% min R8.00",  icon: ReceiptText },
 ];
 
 const nav: Array<{ screen: Screen; label: string; icon: React.ElementType }> = [
@@ -99,21 +120,75 @@ function money(v: number) {
   return new Intl.NumberFormat("en-ZA", { style: "currency", currency: "ZAR" }).format(v);
 }
 
+function fmtDate(d: Date) {
+  return d.toLocaleDateString("en-ZA", { day: "numeric", month: "short" });
+}
+
+function genToken(): string {
+  return Array.from({ length: 5 }, () =>
+    Math.floor(Math.random() * 10000).toString().padStart(4, "0")
+  ).join(" ");
+}
+
+function uid() { return Math.random().toString(36).slice(2); }
+
 /* ─── App Shell ───────────────────────────────────────────────────────── */
 function App() {
-  const [screen, setScreen] = useState<Screen>("home");
-  const [copied, setCopied] = useState(false);
+  const [screen, setScreen]     = useState<Screen>("home");
+  const [balance, setBalance]   = useState(0.48);
+  const [tokenList, setTokenList] = useState<Token[]>(SEED_TOKENS);
+  const [txList, setTxList]     = useState<Transaction[]>(SEED_TXS);
+  const [toast, setToast]       = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const spent = useMemo(
+    () => txList.filter((t) => !t.in).reduce((s, t) => s + t.amount, 0),
+    [txList]
+  );
+
+  function showToast(msg: string) {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(msg);
+    toastTimer.current = setTimeout(() => setToast(null), 2000);
+  }
+
+  function copyReference() {
+    navigator.clipboard?.writeText("100477911");
+    showToast("Reference copied");
+  }
+
+  function handleRecharge(amount: number, method: PaymentMethod) {
+    const today = fmtDate(new Date());
+    setBalance((b) => +(b + amount).toFixed(2));
+    setTxList((prev) => [
+      { id: uid(), date: today, label: "Wallet top-up", detail: method, amount, in: true },
+      ...prev,
+    ]);
+    showToast("Wallet recharged");
+    setScreen("home");
+  }
+
+  function handleBuyToken(utility: Utility, amount: number) {
+    const units = +(amount / PRICE_PER_UNIT[utility]).toFixed(2);
+    const today = fmtDate(new Date());
+    const code  = genToken();
+    setBalance((b) => +(b - amount).toFixed(2));
+    setTokenList((prev) => [
+      { date: today, amount, token: code, units, utility },
+      ...prev,
+    ]);
+    setTxList((prev) => [
+      { id: uid(), date: today, label: `${utility} token`, detail: `${units} units`, amount, in: false, utility },
+      ...prev,
+    ]);
+    showToast("Token generated");
+    setScreen("home");
+  }
 
   const title = {
     home: "Metering", recharge: "Recharge", buy: "Buy token",
     usage: "Usage pulse", ledger: "Ledger", control: "Control",
   }[screen];
-
-  function copyReference() {
-    navigator.clipboard?.writeText("100477911");
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
-  }
 
   return (
     <View style={S.app}>
@@ -130,10 +205,10 @@ function App() {
       </View>
 
       {/* Toast */}
-      {copied && (
+      {toast && (
         <View style={S.toast}>
           <Check size={14} color={C.ink} />
-          <Text style={S.toastText}>Reference copied</Text>
+          <Text style={S.toastText}>{toast}</Text>
         </View>
       )}
 
@@ -143,12 +218,31 @@ function App() {
         contentContainerStyle={S.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {screen === "home"     && <HomeScreen    setScreen={setScreen} copyRef={copyReference} />}
-        {screen === "recharge" && <RechargeScreen copyRef={copyReference} />}
-        {screen === "buy"      && <BuyScreen />}
-        {screen === "usage"    && <UsageScreen />}
-        {screen === "ledger"   && <LedgerScreen />}
-        {screen === "control"  && <ControlScreen />}
+        {screen === "home"     && (
+          <HomeScreen
+            balance={balance}
+            spent={spent}
+            tokens={tokenList}
+            setScreen={setScreen}
+            copyRef={copyReference}
+          />
+        )}
+        {screen === "recharge" && (
+          <RechargeScreen
+            onConfirm={handleRecharge}
+            copyRef={copyReference}
+          />
+        )}
+        {screen === "buy" && (
+          <BuyScreen
+            balance={balance}
+            onConfirm={handleBuyToken}
+            setScreen={setScreen}
+          />
+        )}
+        {screen === "usage"   && <UsageScreen tokens={tokenList} />}
+        {screen === "ledger"  && <LedgerScreen txList={txList} />}
+        {screen === "control" && <ControlScreen />}
       </ScrollView>
 
       {/* Tab bar */}
@@ -172,13 +266,21 @@ function App() {
 }
 
 /* ─── Home ────────────────────────────────────────────────────────────── */
-function HomeScreen({ setScreen, copyRef }: { setScreen: (s: Screen) => void; copyRef: () => void }) {
+function HomeScreen({
+  balance, spent, tokens, setScreen, copyRef,
+}: {
+  balance: number; spent: number; tokens: Token[];
+  setScreen: (s: Screen) => void; copyRef: () => void;
+}) {
+  const progressPct = Math.min(100, (spent / SPEND_LIMIT) * 100);
+  const lowBalance  = balance < 50;
+
   return (
     <View style={S.stack}>
-      {/* Hero balance — floats on dark green bg */}
+      {/* Hero balance */}
       <View style={S.hero}>
         <Text style={S.heroLabel}>Available balance</Text>
-        <Text style={S.heroAmount}>{money(0.48)}</Text>
+        <Text style={S.heroAmount}>{money(balance)}</Text>
         <Pressable style={S.refPill} onPress={copyRef}>
           <Text style={S.refLabel}>Wallet ref</Text>
           <Text style={S.refValue}>100477911</Text>
@@ -187,66 +289,94 @@ function HomeScreen({ setScreen, copyRef }: { setScreen: (s: Screen) => void; co
         <View style={S.heroStats}>
           <View>
             <Text style={S.heroStatLabel}>Spent this month</Text>
-            <Text style={S.heroStatValue}>{money(547)}</Text>
+            <Text style={S.heroStatValue}>{money(spent)}</Text>
           </View>
           <View style={S.alignRight}>
             <Text style={S.heroStatLabel}>Limit</Text>
-            <Text style={S.heroStatValue}>{money(10000)}</Text>
+            <Text style={S.heroStatValue}>{money(SPEND_LIMIT)}</Text>
           </View>
         </View>
         <View style={S.progressTrack}>
-          <View style={S.progressFill} />
+          <View style={[S.progressFill, { width: `${progressPct}%` as unknown as number }]} />
         </View>
       </View>
 
       {/* Quick-action dock */}
       <View style={S.dock}>
-        <ActionBtn label="Recharge" sub="Add funds" icon={Wallet}    tint={C.lime}  onPress={() => setScreen("recharge")} />
-        <ActionBtn label="Buy"      sub="Token"     icon={Bolt}      tint={C.mint}  onPress={() => setScreen("buy")}      />
-        <ActionBtn label="Pulse"    sub="Usage"     icon={LineChart}  tint={C.amber} onPress={() => setScreen("usage")}   />
+        <ActionBtn label="Recharge" sub="Add funds" icon={Wallet}   tint={C.lime}  onPress={() => setScreen("recharge")} />
+        <ActionBtn label="Buy"      sub="Token"     icon={Bolt}     tint={C.mint}  onPress={() => setScreen("buy")}      />
+        <ActionBtn label="Pulse"    sub="Usage"     icon={LineChart} tint={C.amber} onPress={() => setScreen("usage")}   />
       </View>
 
-      {/* Alert */}
-      <View style={S.alertCard}>
-        <View style={S.alertIcon}>
-          <Lock size={15} color={C.red} />
+      {/* Low balance alert */}
+      {lowBalance && (
+        <View style={S.alertCard}>
+          <View style={S.alertIcon}>
+            <Lock size={15} color={C.red} />
+          </View>
+          <View style={S.flex1}>
+            <Text style={S.alertTitle}>Low balance lock</Text>
+            <Text style={S.alertBody}>Recharge before buying your next prepaid token.</Text>
+          </View>
         </View>
-        <View style={S.flex1}>
-          <Text style={S.alertTitle}>Low balance lock</Text>
-          <Text style={S.alertBody}>Recharge before buying your next prepaid token.</Text>
-        </View>
-      </View>
+      )}
 
       {/* Latest tokens */}
       <SectionHead title="Latest tokens" action="Ledger" onPress={() => setScreen("ledger")} />
-      {tokens.map((t) => <TokenCard key={t.token} token={t} />)}
+      {tokens.length === 0
+        ? <Text style={[S.cardLabel, { textAlign: "center", paddingVertical: 24 }]}>No tokens yet</Text>
+        : tokens.slice(0, 5).map((t) => <TokenCard key={t.token} token={t} />)
+      }
     </View>
   );
 }
 
 /* ─── Recharge ────────────────────────────────────────────────────────── */
-function RechargeScreen({ copyRef }: { copyRef: () => void }) {
+function RechargeScreen({
+  onConfirm, copyRef,
+}: { onConfirm: (amount: number, method: PaymentMethod) => void; copyRef: () => void }) {
   const [amount, setAmount] = useState(250);
-  const [method, setMethod] = useState<PaymentMethod>("Instant EFT");
+  const [custom, setCustom]   = useState("");
+  const [method, setMethod]   = useState<PaymentMethod>("Instant EFT");
+
+  const effectiveAmount = custom ? Math.max(0, Number(custom) || 0) : amount;
   const fee = useMemo(() => {
-    if (method === "Instant EFT") return Math.max(1.5, amount * 0.016);
-    if (method === "Card")        return amount * 0.0295 + 1.25;
-    if (method === "Retail")      return Math.max(8, amount * 0.039);
+    const a = effectiveAmount;
+    if (method === "Instant EFT") return Math.max(1.5, a * 0.016);
+    if (method === "Card")        return a * 0.0295 + 1.25;
+    if (method === "Retail")      return Math.max(8, a * 0.039);
     return 3.5;
-  }, [amount, method]);
+  }, [effectiveAmount, method]);
+
+  function selectPreset(v: number) { setCustom(""); setAmount(v); }
 
   return (
     <View style={S.stack}>
       {/* Amount picker */}
       <View style={S.card}>
         <Text style={S.cardLabel}>Recharge value</Text>
-        <Text style={S.bigNumber}>{money(amount)}</Text>
+        <Text style={S.bigNumber}>{money(effectiveAmount)}</Text>
         <View style={S.chipRow}>
           {[100, 250, 500, 1000].map((v) => (
-            <Pressable key={v} style={[S.chip, amount === v && S.chipActive]} onPress={() => setAmount(v)}>
-              <Text style={[S.chipText, amount === v && S.chipTextActive]}>{money(v)}</Text>
+            <Pressable
+              key={v}
+              style={[S.chip, !custom && amount === v && S.chipActive]}
+              onPress={() => selectPreset(v)}
+            >
+              <Text style={[S.chipText, !custom && amount === v && S.chipTextActive]}>{money(v)}</Text>
             </Pressable>
           ))}
+        </View>
+        <View style={[S.numInput, { marginTop: 12 }]}>
+          <Text style={S.numCurrency}>R</Text>
+          <TextInput
+            value={custom}
+            onChangeText={setCustom}
+            placeholder="Other amount"
+            placeholderTextColor={C.t3}
+            keyboardType="numeric"
+            style={S.numField}
+          />
         </View>
       </View>
 
@@ -289,25 +419,36 @@ function RechargeScreen({ copyRef }: { copyRef: () => void }) {
       {/* Checkout */}
       <View style={S.card}>
         <View style={S.checkoutMetrics}>
-          <CardMetric label="Amount" value={money(amount)} />
+          <CardMetric label="Amount" value={money(effectiveAmount)} />
           <CardMetric label="Fees"   value={money(fee)} alignRight />
         </View>
         <View style={S.divider} />
         <View style={S.checkoutTotal}>
           <Text style={S.totalLabel}>Total to pay</Text>
-          <Text style={S.totalValue}>{money(amount + fee)}</Text>
+          <Text style={S.totalValue}>{money(effectiveAmount + fee)}</Text>
         </View>
-        <GreenBtn label="Continue recharge" icon={ArrowUpRight} />
+        <GreenBtn
+          label="Confirm recharge"
+          icon={ArrowUpRight}
+          disabled={effectiveAmount <= 0}
+          onPress={() => onConfirm(effectiveAmount, method)}
+        />
       </View>
     </View>
   );
 }
 
 /* ─── Buy ─────────────────────────────────────────────────────────────── */
-function BuyScreen() {
+function BuyScreen({
+  balance, onConfirm, setScreen,
+}: { balance: number; onConfirm: (u: Utility, a: number) => void; setScreen: (s: Screen) => void }) {
   const [utility, setUtility] = useState<Utility>("Electricity");
-  const [amount, setAmount] = useState("100");
-  const units = (Number(amount || 0)) / (utility === "Electricity" ? 4.97 : 22.4);
+  const [amount, setAmount]   = useState("100");
+
+  const numAmount = Math.max(0, Number(amount) || 0);
+  const units     = +(numAmount / PRICE_PER_UNIT[utility]).toFixed(2);
+  const canBuy    = numAmount > 0 && balance >= numAmount;
+  const tooLow    = numAmount > 0 && balance < numAmount;
 
   return (
     <View style={S.stack}>
@@ -328,48 +469,87 @@ function BuyScreen() {
             style={S.numField}
           />
         </View>
-        <View style={S.estimateRow}>
-          <Gauge size={16} color={C.lime} />
-          <Text style={S.estimateLabel}>Estimated units</Text>
-          <Text style={S.estimateValue}>{units.toFixed(2)}</Text>
-        </View>
+        {numAmount > 0 && (
+          <View style={S.estimateRow}>
+            <Gauge size={16} color={C.lime} />
+            <Text style={S.estimateLabel}>
+              Estimated {utility === "Electricity" ? "kWh" : "litres"}
+            </Text>
+            <Text style={S.estimateValue}>{units.toFixed(2)}</Text>
+          </View>
+        )}
       </View>
 
-      <View style={S.alertCard}>
-        <View style={S.alertIcon}>
-          <Lock size={15} color={C.red} />
-        </View>
-        <View style={S.flex1}>
-          <Text style={S.alertTitle}>Wallet balance is too low</Text>
-          <Text style={S.alertBody}>Available: {money(0.48)}. Recharge to unlock.</Text>
-        </View>
+      {/* Quick presets */}
+      <View style={S.chipRow}>
+        {[50, 100, 200, 500].map((v) => (
+          <Pressable
+            key={v}
+            style={[S.chip, numAmount === v && S.chipActive]}
+            onPress={() => setAmount(String(v))}
+          >
+            <Text style={[S.chipText, numAmount === v && S.chipTextActive]}>{money(v)}</Text>
+          </Pressable>
+        ))}
       </View>
 
-      <GreenBtn label="Recharge first" icon={Wallet} />
+      {/* Balance display */}
+      <View style={[S.card, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
+        <Text style={S.cardLabel}>Wallet balance</Text>
+        <Text style={[S.metricValue, { color: balance >= numAmount ? C.lime : C.red }]}>{money(balance)}</Text>
+      </View>
+
+      {tooLow && (
+        <View style={S.alertCard}>
+          <View style={S.alertIcon}>
+            <Lock size={15} color={C.red} />
+          </View>
+          <View style={S.flex1}>
+            <Text style={S.alertTitle}>Balance too low</Text>
+            <Text style={S.alertBody}>
+              Need {money(numAmount - balance)} more. Recharge your wallet first.
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {tooLow
+        ? <GreenBtn label="Recharge wallet" icon={Wallet} onPress={() => setScreen("recharge")} />
+        : <GreenBtn label="Buy token" icon={Bolt} disabled={!canBuy} onPress={() => onConfirm(utility, numAmount)} />
+      }
     </View>
   );
 }
 
 /* ─── Usage ───────────────────────────────────────────────────────────── */
-function UsageScreen() {
-  const [utility, setUtility] = useState<Utility>("Water");
-  const max = Math.max(...usage.map((u) => utility === "Water" ? u.water : u.electricity));
+function UsageScreen({ tokens }: { tokens: Token[] }) {
+  const [utility, setUtility] = useState<Utility>("Electricity");
+
+  const max = Math.max(...usageData.map((u) => utility === "Water" ? u.water : u.electricity));
+
+  /* Derive total units purchased from token list */
+  const totalUnits = tokens
+    .filter((t) => t.utility === utility)
+    .reduce((s, t) => s + t.units, 0);
+  const weekUnits  = Math.round(totalUnits * 0.16); /* mock weekly slice */
+  const dailyAvg   = weekUnits > 0 ? Math.round(weekUnits / 7) : 0;
+  const unit        = utility === "Electricity" ? "kWh" : "L";
 
   return (
     <View style={S.stack}>
       <View style={S.card}>
         <Seg
-          options={["Water", "Electricity"] as Utility[]}
+          options={["Electricity", "Water"] as Utility[]}
           active={utility}
           onChange={(v) => setUtility(v as Utility)}
-          icons={{ Water: Droplets, Electricity: Bolt }}
+          icons={{ Electricity: Bolt, Water: Droplets }}
         />
         <View style={S.usageMetrics}>
-          <CardMetric label="This week" value={utility === "Water" ? "354 L" : "446 kWh"} />
-          <CardMetric label="Daily avg"  value={utility === "Water" ? "51 L"  : "64 kWh"}  alignRight />
+          <CardMetric label="This week" value={`${weekUnits} ${unit}`} />
+          <CardMetric label="Daily avg"  value={`${dailyAvg} ${unit}`} alignRight />
         </View>
         <View style={S.chart}>
-          {usage.map((item, i) => {
+          {usageData.map((item, i) => {
             const val = utility === "Water" ? item.water : item.electricity;
             const pct = val / max;
             return (
@@ -382,6 +562,12 @@ function UsageScreen() {
             );
           })}
         </View>
+      </View>
+
+      {/* Total purchased */}
+      <View style={[S.card, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
+        <Text style={S.cardLabel}>Total {utility.toLowerCase()} purchased</Text>
+        <Text style={[S.metricValue, { color: C.lime }]}>{totalUnits.toFixed(1)} {unit}</Text>
       </View>
 
       <View style={S.insightCard}>
@@ -398,33 +584,69 @@ function UsageScreen() {
 }
 
 /* ─── Ledger ──────────────────────────────────────────────────────────── */
-function LedgerScreen() {
+type LedgerFilter = "All" | "Electricity" | "Water" | "Top-ups";
+
+function LedgerScreen({ txList }: { txList: Transaction[] }) {
+  const [filter, setFilter] = useState<LedgerFilter>("All");
+
+  const filters: LedgerFilter[] = ["All", "Electricity", "Water", "Top-ups"];
+
+  const visible = txList.filter((tx) => {
+    if (filter === "All")         return true;
+    if (filter === "Top-ups")     return tx.in;
+    return tx.utility === filter;
+  });
+
+  const totalIn  = visible.filter((t) => t.in).reduce((s, t) => s + t.amount, 0);
+  const totalOut = visible.filter((t) => !t.in).reduce((s, t) => s + t.amount, 0);
+
   return (
     <View style={S.stack}>
-      <View style={S.filterRow}>
-        <Text style={S.filterActive}>June</Text>
-        <Text style={S.filterItem}>Electricity</Text>
-        <Text style={S.filterItem}>All rails</Text>
-      </View>
-      {transactions.map((item) => (
-        <View key={`${item.label}-${item.date}-${item.amount}`} style={S.txRow}>
-          <View style={[S.txIcon, item.in ? S.txIn : S.txOut]}>
-            {item.in
-              ? <ArrowDownLeft size={16} color={C.ink} />
-              : <ArrowUpRight  size={16} color={C.ink} />}
-          </View>
-          <View style={S.flex1}>
-            <Text style={S.txTitle}>{item.label}</Text>
-            <Text style={S.txSub}>{item.detail}</Text>
-          </View>
-          <View style={S.alignRight}>
-            <Text style={[S.txAmount, item.in ? S.txAmtIn : S.txAmtOut]}>
-              {item.in ? "+" : "-"}{money(item.amount)}
-            </Text>
-            <Text style={S.txDate}>{item.date}</Text>
-          </View>
+      {/* Filter pills */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={[S.filterRow, { paddingBottom: 4 }]}>
+          {filters.map((f) => (
+            <Pressable key={f} onPress={() => setFilter(f)}>
+              <Text style={f === filter ? S.filterActive : S.filterItem}>{f}</Text>
+            </Pressable>
+          ))}
         </View>
-      ))}
+      </ScrollView>
+
+      {/* Summary row */}
+      <View style={[S.card, { flexDirection: "row", justifyContent: "space-between" }]}>
+        <View>
+          <Text style={S.cardLabel}>Credits</Text>
+          <Text style={[S.metricValue, { color: C.lime }]}>+{money(totalIn)}</Text>
+        </View>
+        <View style={S.alignRight}>
+          <Text style={S.cardLabel}>Debits</Text>
+          <Text style={[S.metricValue, { color: C.t1 }]}>-{money(totalOut)}</Text>
+        </View>
+      </View>
+
+      {visible.length === 0
+        ? <Text style={[S.cardLabel, { textAlign: "center", paddingVertical: 24 }]}>No transactions</Text>
+        : visible.map((item) => (
+            <View key={item.id} style={S.txRow}>
+              <View style={[S.txIcon, item.in ? S.txIn : S.txOut]}>
+                {item.in
+                  ? <ArrowDownLeft size={16} color={C.ink} />
+                  : <ArrowUpRight  size={16} color={C.ink} />}
+              </View>
+              <View style={S.flex1}>
+                <Text style={S.txTitle}>{item.label}</Text>
+                <Text style={S.txSub}>{item.detail}</Text>
+              </View>
+              <View style={S.alignRight}>
+                <Text style={[S.txAmount, item.in ? S.txAmtIn : S.txAmtOut]}>
+                  {item.in ? "+" : "-"}{money(item.amount)}
+                </Text>
+                <Text style={S.txDate}>{item.date}</Text>
+              </View>
+            </View>
+          ))
+      }
     </View>
   );
 }
@@ -507,12 +729,22 @@ function CardMetric({ label, value, alignRight }: { label: string; value: string
   );
 }
 
-function TokenCard({ token }: { token: (typeof tokens)[number] }) {
+function TokenCard({ token }: { token: Token }) {
+  const [copied, setCopied] = useState(false);
+  const UtilIcon = token.utility === "Water" ? Droplets : Bolt;
+  const unitLabel = token.utility === "Water" ? "L" : "kWh";
+
+  function copyToken() {
+    navigator.clipboard?.writeText(token.token.replace(/ /g, ""));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+
   return (
     <View style={S.card}>
       <View style={S.tokenHead}>
         <View style={S.tokenBadge}>
-          <Bolt size={10} color={C.ink} />
+          <UtilIcon size={10} color={C.ink} />
           <Text style={S.tokenBadgeText}>{token.utility}</Text>
         </View>
         <Text style={S.tokenDate}>{token.date}</Text>
@@ -520,8 +752,12 @@ function TokenCard({ token }: { token: (typeof tokens)[number] }) {
       <Text style={S.tokenCode}>{token.token}</Text>
       <View style={S.tokenFoot}>
         <Text style={S.tokenMeta}>{money(token.amount)}</Text>
-        <Text style={S.tokenMeta}>{token.units.toFixed(2)} units</Text>
-        <Clipboard size={14} color={C.t3} />
+        <Text style={S.tokenMeta}>{token.units.toFixed(2)} {unitLabel}</Text>
+        <Pressable onPress={copyToken}>
+          {copied
+            ? <Check size={14} color={C.lime} />
+            : <Clipboard size={14} color={C.t3} />}
+        </Pressable>
       </View>
     </View>
   );
@@ -556,9 +792,15 @@ function CtrlRow({ title, amount, owner, onChange }:
   );
 }
 
-function GreenBtn({ label, icon: Icon }: { label: string; icon: React.ElementType }) {
+function GreenBtn({ label, icon: Icon, onPress, disabled }: {
+  label: string; icon: React.ElementType;
+  onPress?: () => void; disabled?: boolean;
+}) {
   return (
-    <Pressable style={S.greenBtn}>
+    <Pressable
+      style={[S.greenBtn, disabled && { opacity: 0.4 }]}
+      onPress={disabled ? undefined : onPress}
+    >
       <Text style={S.greenBtnText}>{label}</Text>
       <Icon size={17} color={C.ink} />
     </Pressable>
