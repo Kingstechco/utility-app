@@ -270,7 +270,7 @@ function App() {
       {/* Header */}
       <View style={S.header}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          {screen === "recharge" && (
+          {(screen === "recharge" || screen === "buy" || screen === "usage") && (
             <Pressable style={S.backBtn} onPress={() => setScreen("home")}>
               <ArrowLeft size={18} color={C.t1} />
             </Pressable>
