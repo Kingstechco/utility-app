@@ -109,6 +109,7 @@ function App() {
     <View style={styles.viewport}>
       <View style={styles.phone}>
         <View style={styles.statusGlow} />
+        <View style={styles.statusGlow2} />
         <View style={styles.header}>
           <View>
             <Text style={styles.eyebrow}>Unit 28-05</Text>
@@ -336,8 +337,8 @@ function UsageScreen() {
           })}
         </View>
         <View style={styles.usageMetricRow}>
-          <Metric label="This week" value={utility === "Water" ? "354 L" : "446 kWh"} />
-          <Metric label="Daily avg" value={utility === "Water" ? "51 L" : "64 kWh"} alignRight />
+          <Metric label="This week" value={utility === "Water" ? "354 L" : "446 kWh"} light />
+          <Metric label="Daily avg" value={utility === "Water" ? "51 L" : "64 kWh"} alignRight light />
         </View>
         <View style={styles.chart}>
           {usage.map((item, index) => {
@@ -440,11 +441,11 @@ function TokenTicket({ token }: { token: (typeof tokens)[number] }) {
   );
 }
 
-function Metric({ label, value, alignRight }: { label: string; value: string; alignRight?: boolean }) {
+function Metric({ label, value, alignRight, light }: { label: string; value: string; alignRight?: boolean; light?: boolean }) {
   return (
     <View style={alignRight && styles.alignRight}>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={[styles.metricLabel, light && styles.metricLabelLight]}>{label}</Text>
+      <Text style={[styles.metricValue, light && styles.metricValueLight]}>{value}</Text>
     </View>
   );
 }
@@ -502,25 +503,34 @@ function PrimaryButton({ label, icon: Icon }: { label: string; icon: React.Eleme
 const styles = {
   viewport: {
     height: "100vh",
-    backgroundColor: palette.ink,
+    backgroundColor: "transparent",
     alignItems: "center",
   },
   phone: {
     width: "100%",
     maxWidth: 430,
     height: "100vh",
-    backgroundColor: palette.ink,
+    backgroundColor: "transparent",
     overflow: "hidden",
     position: "relative",
   },
   statusGlow: {
     position: "absolute",
-    top: -160,
-    left: -90,
-    width: 330,
-    height: 330,
+    top: -140,
+    left: -80,
+    width: 360,
+    height: 360,
     borderRadius: 999,
-    backgroundColor: "rgba(0, 211, 155, 0.28)",
+    backgroundColor: "rgba(0, 211, 155, 0.22)",
+  },
+  statusGlow2: {
+    position: "absolute",
+    top: -100,
+    right: -120,
+    width: 280,
+    height: 280,
+    borderRadius: 999,
+    backgroundColor: "rgba(88, 104, 255, 0.18)",
   },
   header: {
     paddingTop: 22,
@@ -585,7 +595,7 @@ const styles = {
     overflow: "hidden",
     borderRadius: 34,
     padding: 22,
-    backgroundColor: palette.lime,
+    background: "linear-gradient(145deg, #c9ff57 0%, #00d39b 100%)",
     minHeight: 256,
   },
   heroGrid: {
@@ -664,12 +674,18 @@ const styles = {
     textTransform: "uppercase",
     letterSpacing: 0.7,
   },
+  metricLabelLight: {
+    color: "rgba(255,255,255,0.5)",
+  },
   metricValue: {
     marginTop: 4,
     color: palette.ink,
     fontFamily: "Space Grotesk",
     fontSize: 19,
     fontWeight: "700",
+  },
+  metricValueLight: {
+    color: palette.white,
   },
   progressTrack: {
     marginTop: 12,
@@ -681,7 +697,7 @@ const styles = {
     width: "6%",
     height: 8,
     borderRadius: 999,
-    backgroundColor: palette.ink,
+    backgroundColor: "rgba(7,17,31,0.5)",
   },
   actionDock: {
     flexDirection: "row",
@@ -724,7 +740,9 @@ const styles = {
     alignItems: "center",
     borderRadius: 26,
     padding: 15,
-    backgroundColor: "#fff0ec",
+    backgroundColor: "rgba(255,107,88,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,107,88,0.22)",
   },
   alertIcon: {
     width: 38,
@@ -732,16 +750,16 @@ const styles = {
     borderRadius: 15,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#ffe0d9",
+    backgroundColor: "rgba(255,107,88,0.2)",
   },
   alertTitle: {
-    color: palette.ink,
+    color: palette.white,
     fontWeight: "900",
     fontSize: 15,
   },
   alertText: {
     marginTop: 2,
-    color: "#7f4a42",
+    color: "rgba(255,170,150,0.9)",
     fontWeight: "700",
     fontSize: 12,
   },
@@ -764,7 +782,9 @@ const styles = {
   ticket: {
     borderRadius: 28,
     padding: 16,
-    backgroundColor: palette.paper,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   ticketHeader: {
     flexDirection: "row",
@@ -777,17 +797,17 @@ const styles = {
     paddingHorizontal: 10,
     overflow: "hidden",
     color: palette.ink,
-    backgroundColor: "#fff3b0",
+    backgroundColor: "#c9ff57",
     fontWeight: "900",
     fontSize: 12,
   },
   ticketDate: {
-    color: palette.muted,
+    color: "rgba(255,255,255,0.5)",
     fontWeight: "800",
   },
   ticketCode: {
     marginTop: 17,
-    color: palette.ink,
+    color: palette.white,
     fontFamily: "Space Grotesk",
     fontSize: 24,
     fontWeight: "700",
@@ -800,17 +820,19 @@ const styles = {
     alignItems: "center",
   },
   ticketMeta: {
-    color: palette.muted,
+    color: "rgba(255,255,255,0.5)",
     fontWeight: "900",
     fontSize: 12,
   },
   amountHero: {
     borderRadius: 34,
     padding: 22,
-    backgroundColor: palette.paper,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   panelLabel: {
-    color: palette.muted,
+    color: "rgba(255,255,255,0.55)",
     fontWeight: "900",
     fontSize: 12,
     textTransform: "uppercase",
@@ -818,7 +840,7 @@ const styles = {
   },
   amountText: {
     marginTop: 4,
-    color: palette.ink,
+    color: palette.white,
     fontFamily: "Space Grotesk",
     fontSize: 48,
     fontWeight: "700",
@@ -833,18 +855,21 @@ const styles = {
     borderRadius: 999,
     paddingVertical: 10,
     paddingHorizontal: 13,
-    backgroundColor: palette.white,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
   },
   amountChipActive: {
-    backgroundColor: palette.ink,
+    backgroundColor: palette.lime,
+    borderColor: palette.lime,
   },
   amountChipText: {
-    color: palette.ink,
+    color: "rgba(255,255,255,0.8)",
     fontWeight: "900",
     fontSize: 12,
   },
   amountChipTextActive: {
-    color: palette.lime,
+    color: palette.ink,
   },
   methodStack: {
     gap: 10,
@@ -889,11 +914,13 @@ const styles = {
   bankCard: {
     borderRadius: 28,
     padding: 16,
-    backgroundColor: palette.paper,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
     gap: 10,
   },
   bankTitle: {
-    color: palette.ink,
+    color: palette.white,
     fontFamily: "Space Grotesk",
     fontWeight: "700",
     fontSize: 19,
@@ -903,11 +930,11 @@ const styles = {
     justifyContent: "space-between",
   },
   bankLabel: {
-    color: palette.muted,
+    color: "rgba(255,255,255,0.5)",
     fontWeight: "800",
   },
   bankValue: {
-    color: palette.ink,
+    color: palette.white,
     fontWeight: "900",
   },
   copyRail: {
@@ -967,7 +994,9 @@ const styles = {
   buyPanel: {
     borderRadius: 34,
     padding: 18,
-    backgroundColor: palette.paper,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
     gap: 16,
   },
   segment: {
@@ -1002,10 +1031,12 @@ const styles = {
     paddingHorizontal: 18,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: palette.white,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
   },
   currency: {
-    color: palette.muted,
+    color: "rgba(255,255,255,0.45)",
     fontSize: 28,
     fontWeight: "900",
   },
@@ -1013,10 +1044,11 @@ const styles = {
     flex: 1,
     outlineStyle: "none",
     borderWidth: 0,
-    color: palette.ink,
+    color: palette.white,
     fontFamily: "Space Grotesk",
     fontSize: 42,
     fontWeight: "700",
+    backgroundColor: "transparent",
   },
   estimateCard: {
     borderRadius: 22,
@@ -1043,22 +1075,26 @@ const styles = {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: "#fff0ec",
+    backgroundColor: "rgba(255,107,88,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,107,88,0.22)",
   },
   lockTitle: {
-    color: palette.ink,
+    color: palette.white,
     fontWeight: "900",
   },
   lockText: {
     marginTop: 2,
-    color: "#7f4a42",
+    color: "rgba(255,170,150,0.9)",
     fontWeight: "700",
     fontSize: 12,
   },
   usageHero: {
     borderRadius: 34,
     padding: 18,
-    backgroundColor: palette.paper,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
     gap: 18,
   },
   usageMetricRow: {
@@ -1132,7 +1168,9 @@ const styles = {
   transaction: {
     borderRadius: 26,
     padding: 14,
-    backgroundColor: palette.paper,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -1148,15 +1186,15 @@ const styles = {
     backgroundColor: palette.lime,
   },
   txIconOut: {
-    backgroundColor: "#ffd98c",
+    backgroundColor: palette.amber,
   },
   txTitle: {
-    color: palette.ink,
+    color: palette.white,
     fontWeight: "900",
   },
   txDetail: {
     marginTop: 2,
-    color: palette.muted,
+    color: "rgba(255,255,255,0.5)",
     fontWeight: "700",
     fontSize: 12,
   },
@@ -1164,19 +1202,21 @@ const styles = {
     alignItems: "flex-end",
   },
   txAmount: {
-    color: palette.ink,
+    color: palette.white,
     fontWeight: "900",
   },
   txDate: {
     marginTop: 2,
-    color: palette.muted,
+    color: "rgba(255,255,255,0.5)",
     fontWeight: "700",
     fontSize: 12,
   },
   profileCard: {
     borderRadius: 30,
     padding: 16,
-    backgroundColor: palette.paper,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
@@ -1190,30 +1230,32 @@ const styles = {
     justifyContent: "center",
   },
   profileTitle: {
-    color: palette.ink,
+    color: palette.white,
     fontWeight: "900",
   },
   profileText: {
     marginTop: 3,
-    color: palette.muted,
+    color: "rgba(255,255,255,0.5)",
     fontWeight: "700",
     fontSize: 12,
   },
   controlRow: {
     borderRadius: 26,
     padding: 14,
-    backgroundColor: palette.paper,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
     flexDirection: "row",
     gap: 12,
     alignItems: "center",
   },
   controlTitle: {
-    color: palette.ink,
+    color: palette.white,
     fontWeight: "900",
   },
   controlAmount: {
     marginTop: 3,
-    color: palette.muted,
+    color: "rgba(255,255,255,0.5)",
     fontWeight: "800",
     fontSize: 12,
   },
@@ -1221,7 +1263,7 @@ const styles = {
     flexDirection: "row",
     borderRadius: 999,
     padding: 3,
-    backgroundColor: "#e4e9e2",
+    backgroundColor: "rgba(255,255,255,0.1)",
   },
   switchOption: {
     borderRadius: 999,
@@ -1229,15 +1271,15 @@ const styles = {
     paddingHorizontal: 10,
   },
   switchActive: {
-    backgroundColor: palette.ink,
+    backgroundColor: palette.lime,
   },
   switchText: {
-    color: palette.muted,
+    color: "rgba(255,255,255,0.55)",
     fontWeight: "900",
     fontSize: 11,
   },
   switchActiveText: {
-    color: palette.white,
+    color: palette.ink,
   },
   toast: {
     position: "absolute",

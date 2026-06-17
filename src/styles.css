@@ -9,13 +9,18 @@ body,
 #root {
   min-height: 100%;
   margin: 0;
-  background: #07111f;
 }
 
 body {
   min-width: 320px;
   overflow-x: hidden;
   font-family: Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(ellipse 100% 55% at 10% 0%, rgba(88, 104, 255, 0.2) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 55% at 88% 22%, rgba(0, 211, 155, 0.15) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 80% at 50% 100%, rgba(139, 92, 246, 0.12) 0%, transparent 55%),
+    #07111f;
+  background-attachment: fixed;
 }
 
 * {
@@ -29,4 +34,14 @@ body {
 button,
 input {
   font: inherit;
+}
+
+[role="button"] {
+  transition: opacity 0.14s ease, transform 0.1s ease;
+  cursor: pointer;
+}
+
+[role="button"]:active {
+  opacity: 0.82;
+  transform: scale(0.975);
 }
