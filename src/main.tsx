@@ -4,6 +4,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Bell,
+  BellOff,
   Bolt,
   Check,
   Clipboard,
@@ -20,6 +21,7 @@ import {
   Smartphone,
   Sparkles,
   Wallet,
+  X,
 } from "lucide-react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native-web";
 import "./styles.css";
@@ -91,6 +93,12 @@ const SEED_TXS: Transaction[] = [
   { id: "t4", date: "01 Jun", label: "Hosting",           detail: "Tenant alloc", amount: 90,  in: false },
 ];
 
+const SEED_NOTIFS: Notif[] = [
+  { id: "n1", type: "warning", title: "Low balance", body: "Wallet balance is R0.48. Recharge soon.", time: "13 Jun", read: false },
+  { id: "n2", type: "success", title: "Electricity token generated", body: "60.40 kWh · R300.00", time: "12 Jun", read: true },
+  { id: "n3", type: "info",    title: "Wallet recharged", body: "R550.00 added via Manual EFT.", time: "13 Jun", read: true },
+];
+
 const usageData = [
   { day: "M", water: 42, electricity: 58 },
   { day: "T", water: 54, electricity: 62 },
@@ -109,11 +117,11 @@ const methods: Array<{ name: PaymentMethod; fee: string; icon: React.ElementType
 ];
 
 const nav: Array<{ screen: Screen; label: string; icon: React.ElementType }> = [
-  { screen: "home",     label: "Home",    icon: Home      },
-  { screen: "recharge", label: "Recharge",icon: Wallet    },
-  { screen: "buy",      label: "Buy",     icon: Bolt      },
-  { screen: "usage",    label: "Pulse",   icon: LineChart },
-  { screen: "control",  label: "Control", icon: Settings  },
+  { screen: "home",    label: "Home",    icon: Home         },
+  { screen: "buy",     label: "Buy",     icon: Bolt         },
+  { screen: "ledger",  label: "Ledger",  icon: ReceiptText  },
+  { screen: "usage",   label: "Pulse",   icon: LineChart    },
+  { screen: "control", label: "Control", icon: Settings     },
 ];
 
 function money(v: number) {
@@ -131,6 +139,16 @@ function genToken(): string {
 }
 
 function uid() { return Math.random().toString(36).slice(2); }
+
+/* ─── Notifications ───────────────────────────────────────────────────── */
+interface Notif {
+  id: string;
+  type: "info" | "warning" | "success";
+  title: string;
+  body: string;
+  time: string;
+  read: boolean;
+}
 
 /* ─── Persistence ─────────────────────────────────────────────────────── */
 type CostOwner = "owner" | "tenant";
@@ -151,18 +169,35 @@ function save(key: string, value: unknown) {
 
 /* ─── App Shell ───────────────────────────────────────────────────────── */
 function App() {
-  const [screen, setScreen]     = useState<Screen>("home");
-  const [balance, setBalance]   = useState(() => load("balance", 0.48));
+  const [screen, setScreen]       = useState<Screen>("home");
+  const [balance, setBalance]     = useState(() => load("balance", 0.48));
   const [tokenList, setTokenList] = useState<Token[]>(() => load("tokens", SEED_TOKENS));
-  const [txList, setTxList]     = useState<Transaction[]>(() => load("txs", SEED_TXS));
-  const [alloc, setAlloc]       = useState<CostAlloc>(() => load("alloc", DEFAULT_ALLOC));
-  const [toast, setToast]       = useState<string | null>(null);
+  const [txList, setTxList]       = useState<Transaction[]>(() => load("txs", SEED_TXS));
+  const [alloc, setAlloc]         = useState<CostAlloc>(() => load("alloc", DEFAULT_ALLOC));
+  const [notifs, setNotifs]       = useState<Notif[]>(() => load("notifs", SEED_NOTIFS));
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [toast, setToast]         = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { save("balance",  balance);   }, [balance]);
   useEffect(() => { save("tokens",   tokenList); }, [tokenList]);
   useEffect(() => { save("txs",      txList);    }, [txList]);
   useEffect(() => { save("alloc",    alloc);     }, [alloc]);
+  useEffect(() => { save("notifs",   notifs);    }, [notifs]);
+
+  const unreadCount = notifs.filter((n) => !n.read).length;
+
+  function openNotifs() {
+    setNotifOpen(true);
+    setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+  }
+
+  function pushNotif(n: Omit<Notif, "id" | "read" | "time">) {
+    setNotifs((prev) => [
+      { ...n, id: uid(), read: false, time: fmtDate(new Date()) },
+      ...prev,
+    ]);
+  }
 
   const spent = useMemo(
     () => txList.filter((t) => !t.in).reduce((s, t) => s + t.amount, 0),
@@ -182,20 +217,29 @@ function App() {
 
   function handleRecharge(amount: number, method: PaymentMethod) {
     const today = fmtDate(new Date());
-    setBalance((b) => +(b + amount).toFixed(2));
+    setBalance((b) => {
+      const next = +(b + amount).toFixed(2);
+      return next;
+    });
     setTxList((prev) => [
       { id: uid(), date: today, label: "Wallet top-up", detail: method, amount, in: true },
       ...prev,
     ]);
+    pushNotif({
+      type: "success",
+      title: "Wallet recharged",
+      body: `${money(amount)} added via ${method}.`,
+    });
     showToast("Wallet recharged");
     setScreen("home");
   }
 
   function handleBuyToken(utility: Utility, amount: number) {
-    const units = +(amount / PRICE_PER_UNIT[utility]).toFixed(2);
-    const today = fmtDate(new Date());
-    const code  = genToken();
-    setBalance((b) => +(b - amount).toFixed(2));
+    const units   = +(amount / PRICE_PER_UNIT[utility]).toFixed(2);
+    const today   = fmtDate(new Date());
+    const code    = genToken();
+    const newBal  = +(balance - amount).toFixed(2);
+    setBalance(newBal);
     setTokenList((prev) => [
       { date: today, amount, token: code, units, utility },
       ...prev,
@@ -204,6 +248,18 @@ function App() {
       { id: uid(), date: today, label: `${utility} token`, detail: `${units} units`, amount, in: false, utility },
       ...prev,
     ]);
+    pushNotif({
+      type: "success",
+      title: `${utility} token generated`,
+      body: `${units} ${utility === "Electricity" ? "kWh" : "L"} · ${money(amount)}`,
+    });
+    if (newBal < 50) {
+      pushNotif({
+        type: "warning",
+        title: "Low balance",
+        body: `Wallet balance is ${money(newBal)}. Recharge soon.`,
+      });
+    }
     showToast("Token generated");
     setScreen("home");
   }
@@ -221,11 +277,26 @@ function App() {
           <Text style={S.eyebrow}>Unit 28-05</Text>
           <Text style={S.pageTitle}>{title}</Text>
         </View>
-        <Pressable style={S.bellBtn}>
+        <Pressable style={S.bellBtn} onPress={openNotifs}>
           <Bell size={18} color={C.t1} />
-          <View style={S.bellDot} />
+          {unreadCount > 0 && (
+            <View style={S.bellDot}>
+              {unreadCount < 10 && (
+                <Text style={S.bellDotText}>{unreadCount}</Text>
+              )}
+            </View>
+          )}
         </Pressable>
       </View>
+
+      {/* Notification panel */}
+      {notifOpen && (
+        <NotifPanel
+          notifs={notifs}
+          onClose={() => setNotifOpen(false)}
+          onClear={() => setNotifs([])}
+        />
+      )}
 
       {/* Toast */}
       {toast && (
@@ -655,25 +726,38 @@ function LedgerScreen({ txList }: { txList: Transaction[] }) {
 
       {visible.length === 0
         ? <Text style={[S.cardLabel, { textAlign: "center", paddingVertical: 24 }]}>No transactions</Text>
-        : visible.map((item) => (
-            <View key={item.id} style={S.txRow}>
-              <View style={[S.txIcon, item.in ? S.txIn : S.txOut]}>
-                {item.in
-                  ? <ArrowDownLeft size={16} color={C.ink} />
-                  : <ArrowUpRight  size={16} color={C.ink} />}
+        : (() => {
+            /* Group by date */
+            const groups: Array<{ date: string; items: Transaction[] }> = [];
+            for (const tx of visible) {
+              const g = groups.find((x) => x.date === tx.date);
+              if (g) g.items.push(tx);
+              else groups.push({ date: tx.date, items: [tx] });
+            }
+            return groups.map((g) => (
+              <View key={g.date} style={{ gap: 6 }}>
+                <Text style={S.ledgerDate}>{g.date}</Text>
+                {g.items.map((item) => (
+                  <View key={item.id} style={S.txRow}>
+                    <View style={[S.txIcon, item.in ? S.txIn : S.txOut]}>
+                      {item.in
+                        ? <ArrowDownLeft size={16} color={C.ink} />
+                        : <ArrowUpRight  size={16} color={C.ink} />}
+                    </View>
+                    <View style={S.flex1}>
+                      <Text style={S.txTitle}>{item.label}</Text>
+                      <Text style={S.txSub}>{item.detail}</Text>
+                    </View>
+                    <View style={S.alignRight}>
+                      <Text style={[S.txAmount, item.in ? S.txAmtIn : S.txAmtOut]}>
+                        {item.in ? "+" : "-"}{money(item.amount)}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
               </View>
-              <View style={S.flex1}>
-                <Text style={S.txTitle}>{item.label}</Text>
-                <Text style={S.txSub}>{item.detail}</Text>
-              </View>
-              <View style={S.alignRight}>
-                <Text style={[S.txAmount, item.in ? S.txAmtIn : S.txAmtOut]}>
-                  {item.in ? "+" : "-"}{money(item.amount)}
-                </Text>
-                <Text style={S.txDate}>{item.date}</Text>
-              </View>
-            </View>
-          ))
+            ));
+          })()
       }
     </View>
   );
@@ -704,6 +788,67 @@ function ControlScreen({ alloc, onSave }: { alloc: CostAlloc; onSave: (a: CostAl
       <CtrlRow title="Sewerage"          amount={697.73} owner={draft.sewerage === "owner"} onChange={(v) => set("sewerage", v ? "owner" : "tenant")} />
       <CtrlRow title="Water Demand Levy" amount={65.08}  owner={draft.waterLevy === "owner"} onChange={(v) => set("waterLevy", v ? "owner" : "tenant")} />
       <GreenBtn label="Save allocation" icon={Check} onPress={() => onSave(draft)} />
+    </View>
+  );
+}
+
+/* ─── Notification panel ──────────────────────────────────────────────── */
+function NotifPanel({ notifs, onClose, onClear }: {
+  notifs: Notif[];
+  onClose: () => void;
+  onClear: () => void;
+}) {
+  const tint: Record<Notif["type"], string> = {
+    warning: C.amber,
+    success: C.lime,
+    info:    C.mint,
+  };
+  const dimTint: Record<Notif["type"], string> = {
+    warning: "rgba(255,179,64,0.12)",
+    success: C.limeDim,
+    info:    "rgba(0,212,154,0.12)",
+  };
+
+  return (
+    <View style={S.notifOverlay}>
+      <Pressable style={S.notifBackdrop} onPress={onClose} />
+      <View style={S.notifPanel}>
+        <View style={S.notifHeader}>
+          <Text style={S.notifPanelTitle}>Notifications</Text>
+          <View style={{ flexDirection: "row", gap: 8 }}>
+            {notifs.length > 0 && (
+              <Pressable style={S.notifClearBtn} onPress={onClear}>
+                <Text style={S.notifClearText}>Clear all</Text>
+              </Pressable>
+            )}
+            <Pressable style={S.notifCloseBtn} onPress={onClose}>
+              <X size={16} color={C.t2} />
+            </Pressable>
+          </View>
+        </View>
+
+        <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 420 }}>
+          {notifs.length === 0 ? (
+            <View style={S.notifEmpty}>
+              <BellOff size={28} color={C.t3} />
+              <Text style={S.notifEmptyText}>No notifications</Text>
+            </View>
+          ) : (
+            <View style={{ gap: 8, paddingBottom: 4 }}>
+              {notifs.map((n) => (
+                <View key={n.id} style={[S.notifItem, { backgroundColor: dimTint[n.type] }]}>
+                  <View style={[S.notifDot, { backgroundColor: tint[n.type] }]} />
+                  <View style={S.flex1}>
+                    <Text style={S.notifTitle}>{n.title}</Text>
+                    <Text style={S.notifBody}>{n.body}</Text>
+                  </View>
+                  <Text style={S.notifTime}>{n.time}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -887,10 +1032,13 @@ const S = {
   },
   bellDot: {
     position: "absolute" as const,
-    top: 10, right: 10,
-    width: 7, height: 7,
+    top: 8, right: 8,
+    minWidth: 14, height: 14,
     borderRadius: 999,
     backgroundColor: C.red,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingHorizontal: 3,
   },
 
   /* Toast */
@@ -1357,6 +1505,94 @@ const S = {
   toggleOn:      { backgroundColor: C.lime },
   toggleLabel:   { color: C.t3, fontWeight: "900" as const, fontSize: 11 },
   toggleLabelOn: { color: C.ink },
+
+  /* ── Ledger date group ── */
+  ledgerDate: {
+    color: C.t3,
+    fontWeight: "900" as const,
+    fontSize: 11,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.8,
+    paddingHorizontal: 4,
+    paddingTop: 6,
+  },
+
+  /* ── Notification panel ── */
+  notifOverlay: {
+    position: "absolute" as const,
+    top: 0, left: 0, right: 0, bottom: 0,
+    zIndex: 30,
+  },
+  notifBackdrop: {
+    position: "absolute" as const,
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  notifPanel: {
+    position: "absolute" as const,
+    top: 100, left: 14, right: 14,
+    borderRadius: 24,
+    padding: 16,
+    backgroundColor: "#152010",
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+    shadowColor: "#000",
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+  },
+  notifHeader: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
+    marginBottom: 14,
+  },
+  notifPanelTitle: {
+    color: C.t1,
+    fontFamily: "Space Grotesk",
+    fontSize: 18,
+    fontWeight: "700" as const,
+  },
+  notifCloseBtn: {
+    width: 32, height: 32,
+    borderRadius: 10,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  notifClearBtn: {
+    height: 32,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  notifClearText: { color: C.t3, fontWeight: "900" as const, fontSize: 11 },
+  notifItem: {
+    flexDirection: "row" as const,
+    alignItems: "flex-start" as const,
+    gap: 10,
+    borderRadius: 14,
+    padding: 12,
+  },
+  notifDot: { width: 8, height: 8, borderRadius: 999, marginTop: 4 },
+  notifTitle: { color: C.t1, fontWeight: "900" as const, fontSize: 13 },
+  notifBody:  { marginTop: 2, color: C.t2, fontWeight: "700" as const, fontSize: 12 },
+  notifTime:  { color: C.t3, fontWeight: "800" as const, fontSize: 11, marginTop: 1 },
+  notifEmpty: {
+    paddingVertical: 32,
+    alignItems: "center" as const,
+    gap: 10,
+  },
+  notifEmptyText: { color: C.t3, fontWeight: "800" as const, fontSize: 13 },
+
+  /* ── Bell dot ── */
+  bellDotText: {
+    color: "#fff",
+    fontSize: 8,
+    fontWeight: "900" as const,
+    lineHeight: 9,
+  },
 
   /* ── Tab bar ── */
   tabBar: {
