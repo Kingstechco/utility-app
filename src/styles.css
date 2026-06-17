@@ -1,32 +1,65 @@
 @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800;900&family=Space+Grotesk:wght@600;700&display=swap");
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 html,
 body,
 #root {
-  min-height: 100%;
+  height: 100%;
   margin: 0;
+  padding: 0;
 }
 
 body {
-  min-width: 320px;
-  overflow-x: hidden;
-  font-family: Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
   background:
-    radial-gradient(ellipse 100% 55% at 10% 0%, rgba(88, 104, 255, 0.2) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 55% at 88% 22%, rgba(0, 211, 155, 0.15) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 80% at 50% 100%, rgba(139, 92, 246, 0.12) 0%, transparent 55%),
-    #07111f;
+    radial-gradient(ellipse 120% 55% at 0% 5%, rgba(88, 104, 255, 0.28) 0%, transparent 55%),
+    radial-gradient(ellipse 90% 55% at 100% 0%, rgba(0, 211, 155, 0.2) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 80% at 55% 100%, rgba(139, 92, 246, 0.18) 0%, transparent 55%),
+    #080d1a;
   background-attachment: fixed;
+  overflow: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Desktop: show as a centred phone ── */
+@media (min-width: 520px) {
+  body {
+    align-items: flex-start;
+    justify-content: center;
+    display: flex;
+  }
+  #root {
+    width: 390px;
+    height: 100vh;
+    position: relative;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 32px 80px rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* ── Mobile: true full-screen ── */
+@media (max-width: 519px) {
+  #root {
+    width: 100%;
+    height: 100svh;
+  }
 }
 
 * {
   scrollbar-width: none;
 }
-
 *::-webkit-scrollbar {
   display: none;
 }
@@ -36,12 +69,14 @@ input {
   font: inherit;
 }
 
+/* Smooth press feedback on all tappable elements */
 [role="button"] {
-  transition: opacity 0.14s ease, transform 0.1s ease;
+  transition: opacity 0.14s ease, transform 0.12s ease;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
-
 [role="button"]:active {
-  opacity: 0.82;
-  transform: scale(0.975);
+  opacity: 0.78;
+  transform: scale(0.97);
 }
