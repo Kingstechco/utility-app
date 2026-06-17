@@ -451,7 +451,12 @@ function HomeScreen({
       {tokens.length === 0
         ? <Text style={[S.cardLabel, { textAlign: "center", paddingVertical: 24 }]}>No tokens yet</Text>
         : tokens.slice(0, 5).map((t) => (
-            <TokenCard key={t.token} token={t} onPress={() => setActiveToken(t)} />
+            <TokenCard
+              key={t.token}
+              token={t}
+              onPress={() => setActiveToken(t)}
+              onMarkEntered={onMarkEntered}
+            />
           ))
       }
 
@@ -909,10 +914,23 @@ function ControlScreen({ alloc, spendLimit, onSave }: {
 function TokenModal({ token, onClose, onMarkEntered }: {
   token: Token; onClose: () => void; onMarkEntered: (code: string) => void;
 }) {
+  const [confirming, setConfirming] = useState(false);
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const UtilIcon  = token.utility === "Water" ? Droplets : Bolt;
   const unitLabel = token.utility === "Water" ? "L" : "kWh";
   const groups    = token.token.split(" ");
   const entered   = token.status === "entered";
+
+  function handleMarkTap() {
+    if (confirming) {
+      if (resetTimer.current) clearTimeout(resetTimer.current);
+      onMarkEntered(token.token);
+    } else {
+      setConfirming(true);
+      resetTimer.current = setTimeout(() => setConfirming(false), 2500);
+    }
+  }
 
   return (
     <View style={S.modalOverlay}>
@@ -975,11 +993,15 @@ function TokenModal({ token, onClose, onMarkEntered }: {
             <Text style={[S.greenBtnText, { color: C.mint }]}>Entered at meter</Text>
           </View>
         ) : (
-          <GreenBtn
-            label="Mark as entered"
-            icon={Check}
-            onPress={() => onMarkEntered(token.token)}
-          />
+          <Pressable
+            style={confirming ? S.markConfirming : S.markBtnLarge}
+            onPress={handleMarkTap}
+          >
+            <Check size={17} color={confirming ? C.ink : C.amber} />
+            <Text style={[S.greenBtnText, { color: confirming ? C.ink : C.amber }]}>
+              {confirming ? "Tap again to confirm" : "Mark as entered"}
+            </Text>
+          </Pressable>
         )}
       </View>
     </View>
@@ -1101,10 +1123,26 @@ function CardMetric({ label, value, alignRight }: { label: string; value: string
   );
 }
 
-function TokenCard({ token, onPress }: { token: Token; onPress?: () => void }) {
+function TokenCard({ token, onPress, onMarkEntered }: {
+  token: Token; onPress?: () => void; onMarkEntered?: (code: string) => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const UtilIcon  = token.utility === "Water" ? Droplets : Bolt;
   const unitLabel = token.utility === "Water" ? "L" : "kWh";
   const entered   = token.status === "entered";
+
+  function handleMarkTap() {
+    if (confirming) {
+      if (resetTimer.current) clearTimeout(resetTimer.current);
+      onMarkEntered?.(token.token);
+      setConfirming(false);
+    } else {
+      setConfirming(true);
+      resetTimer.current = setTimeout(() => setConfirming(false), 2500);
+    }
+  }
 
   return (
     <Pressable style={[S.card, entered && S.cardEntered]} onPress={onPress}>
@@ -1113,18 +1151,32 @@ function TokenCard({ token, onPress }: { token: Token; onPress?: () => void }) {
           <UtilIcon size={10} color={C.ink} />
           <Text style={S.tokenBadgeText}>{token.utility}</Text>
         </View>
-        <View style={entered ? S.statusEntered : S.statusPending}>
-          <Check size={9} color={entered ? C.mint : C.amber} />
-          <Text style={[S.statusText, { color: entered ? C.mint : C.amber }]}>
-            {entered ? `Entered ${token.enteredDate ?? ""}` : "Pending"}
-          </Text>
-        </View>
+        {entered && (
+          <View style={S.statusEntered}>
+            <Check size={9} color={C.mint} />
+            <Text style={[S.statusText, { color: C.mint }]}>
+              Entered {token.enteredDate ?? ""}
+            </Text>
+          </View>
+        )}
       </View>
       <Text style={[S.tokenCode, entered && { color: C.t3 }]}>{token.token}</Text>
       <View style={S.tokenFoot}>
         <Text style={S.tokenMeta}>{money(token.amount)}</Text>
         <Text style={S.tokenMeta}>{token.units.toFixed(2)} {unitLabel}</Text>
       </View>
+
+      {!entered && (
+        <Pressable
+          style={confirming ? S.markConfirming : S.markBtn}
+          onPress={handleMarkTap}
+        >
+          <Check size={12} color={confirming ? C.ink : C.amber} />
+          <Text style={[S.markBtnText, confirming && { color: C.ink }]}>
+            {confirming ? "Tap again to confirm" : "Mark as entered"}
+          </Text>
+        </Pressable>
+      )}
     </Pressable>
   );
 }
@@ -1702,6 +1754,48 @@ const S = {
   toggleOn:      { backgroundColor: C.lime },
   toggleLabel:   { color: C.t3, fontWeight: "900" as const, fontSize: 11 },
   toggleLabelOn: { color: C.ink },
+
+  /* ── Mark as entered ── */
+  markBtn: {
+    marginTop: 12,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 6,
+    borderRadius: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255,179,64,0.35)",
+    backgroundColor: "rgba(255,179,64,0.08)",
+  },
+  markConfirming: {
+    marginTop: 12,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 6,
+    borderRadius: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: C.amber,
+    backgroundColor: C.amber,
+  },
+  markBtnLarge: {
+    height: 56,
+    borderRadius: 16,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255,179,64,0.35)",
+    backgroundColor: "rgba(255,179,64,0.08)",
+  },
+  markBtnText: {
+    color: C.amber,
+    fontWeight: "900" as const,
+    fontSize: 13,
+  },
 
   /* ── Token status pills ── */
   statusPending: {
