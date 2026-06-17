@@ -81,7 +81,7 @@ const C = {
 
 /* ─── Data ────────────────────────────────────────────────────────────── */
 const PRICE_PER_UNIT: Record<Utility, number> = { Electricity: 4.97, Water: 22.4 };
-const SPEND_LIMIT = 10000;
+const DEFAULT_SPEND_LIMIT = 10000;
 
 const SEED_TOKENS: Token[] = [
   { date: "12 Jun", amount: 300, token: "0736 4844 3944 8209 4274", units: 60.40, utility: "Electricity" },
@@ -168,6 +168,7 @@ function App() {
   const [tokenList, setTokenList] = useState<Token[]>(() => load("tokens", SEED_TOKENS));
   const [txList, setTxList]       = useState<Transaction[]>(() => load("txs", SEED_TXS));
   const [alloc, setAlloc]         = useState<CostAlloc>(() => load("alloc", DEFAULT_ALLOC));
+  const [spendLimit, setSpendLimit] = useState<number>(() => load("spendLimit", DEFAULT_SPEND_LIMIT));
   const [notifs, setNotifs]       = useState<Notif[]>(() => load("notifs", SEED_NOTIFS));
   const [notifOpen, setNotifOpen] = useState(false);
   const [toast, setToast]         = useState<string | null>(null);
@@ -176,8 +177,9 @@ function App() {
   useEffect(() => { save("balance",  balance);   }, [balance]);
   useEffect(() => { save("tokens",   tokenList); }, [tokenList]);
   useEffect(() => { save("txs",      txList);    }, [txList]);
-  useEffect(() => { save("alloc",    alloc);     }, [alloc]);
-  useEffect(() => { save("notifs",   notifs);    }, [notifs]);
+  useEffect(() => { save("alloc",      alloc);      }, [alloc]);
+  useEffect(() => { save("spendLimit", spendLimit); }, [spendLimit]);
+  useEffect(() => { save("notifs",     notifs);     }, [notifs]);
 
   const unreadCount = notifs.filter((n) => !n.read).length;
 
@@ -317,6 +319,7 @@ function App() {
           <HomeScreen
             balance={balance}
             spent={spent}
+            spendLimit={spendLimit}
             tokens={tokenList}
             setScreen={setScreen}
             copyRef={copyReference}
@@ -340,7 +343,12 @@ function App() {
         {screen === "control" && (
           <ControlScreen
             alloc={alloc}
-            onSave={(a) => { setAlloc(a); showToast("Allocation saved"); }}
+            spendLimit={spendLimit}
+            onSave={(a, limit) => {
+              setAlloc(a);
+              setSpendLimit(limit);
+              showToast("Settings saved");
+            }}
           />
         )}
       </ScrollView>
@@ -367,12 +375,13 @@ function App() {
 
 /* ─── Home ────────────────────────────────────────────────────────────── */
 function HomeScreen({
-  balance, spent, tokens, setScreen, copyRef,
+  balance, spent, spendLimit, tokens, setScreen, copyRef,
 }: {
-  balance: number; spent: number; tokens: Token[];
+  balance: number; spent: number; spendLimit: number; tokens: Token[];
   setScreen: (s: Screen) => void; copyRef: () => void;
 }) {
-  const progressPct = Math.min(100, (spent / SPEND_LIMIT) * 100);
+  const [activeToken, setActiveToken] = useState<Token | null>(null);
+  const progressPct = Math.min(100, (spent / spendLimit) * 100);
   const lowBalance  = balance < 50;
 
   return (
@@ -393,7 +402,7 @@ function HomeScreen({
           </View>
           <View style={S.alignRight}>
             <Text style={S.heroStatLabel}>Limit</Text>
-            <Text style={S.heroStatValue}>{money(SPEND_LIMIT)}</Text>
+            <Text style={S.heroStatValue}>{money(spendLimit)}</Text>
           </View>
         </View>
         <View style={S.progressTrack}>
@@ -425,8 +434,14 @@ function HomeScreen({
       <SectionHead title="Latest tokens" action="Ledger" onPress={() => setScreen("ledger")} />
       {tokens.length === 0
         ? <Text style={[S.cardLabel, { textAlign: "center", paddingVertical: 24 }]}>No tokens yet</Text>
-        : tokens.slice(0, 5).map((t) => <TokenCard key={t.token} token={t} />)
+        : tokens.slice(0, 5).map((t) => (
+            <TokenCard key={t.token} token={t} onPress={() => setActiveToken(t)} />
+          ))
       }
+
+      {activeToken && (
+        <TokenModal token={activeToken} onClose={() => setActiveToken(null)} />
+      )}
     </View>
   );
 }
@@ -819,12 +834,18 @@ function LedgerScreen({ txList }: { txList: Transaction[] }) {
 }
 
 /* ─── Control ─────────────────────────────────────────────────────────── */
-function ControlScreen({ alloc, onSave }: { alloc: CostAlloc; onSave: (a: CostAlloc) => void }) {
-  const [draft, setDraft] = useState<CostAlloc>(alloc);
+function ControlScreen({ alloc, spendLimit, onSave }: {
+  alloc: CostAlloc; spendLimit: number;
+  onSave: (a: CostAlloc, limit: number) => void;
+}) {
+  const [draft, setDraft]       = useState<CostAlloc>(alloc);
+  const [limitStr, setLimitStr] = useState(String(spendLimit));
 
   function set(key: keyof CostAlloc, val: CostOwner) {
     setDraft((prev) => ({ ...prev, [key]: val }));
   }
+
+  const parsedLimit = Math.max(100, Number(limitStr) || DEFAULT_SPEND_LIMIT);
 
   return (
     <View style={S.stack}>
@@ -838,11 +859,100 @@ function ControlScreen({ alloc, onSave }: { alloc: CostAlloc; onSave: (a: CostAl
         </View>
       </View>
 
+      <SectionHead title="Monthly spend limit" />
+      <View style={S.card}>
+        <Text style={S.cardLabel}>Cap amount</Text>
+        <View style={[S.numInput, { height: 60 }]}>
+          <Text style={S.numCurrency}>R</Text>
+          <TextInput
+            value={limitStr}
+            onChangeText={setLimitStr}
+            keyboardType="numeric"
+            style={[S.numField, { fontSize: 28 }]}
+          />
+        </View>
+        <Text style={[S.cardLabel, { marginTop: 8 }]}>
+          Home screen progress bar tracks spending against this cap.
+        </Text>
+      </View>
+
       <SectionHead title="Cost responsibility" />
-      <CtrlRow title="Hosting"           amount={90}     owner={draft.hosting === "owner"}  onChange={(v) => set("hosting",  v ? "owner" : "tenant")} />
-      <CtrlRow title="Sewerage"          amount={697.73} owner={draft.sewerage === "owner"} onChange={(v) => set("sewerage", v ? "owner" : "tenant")} />
+      <CtrlRow title="Hosting"           amount={90}     owner={draft.hosting === "owner"}   onChange={(v) => set("hosting",   v ? "owner" : "tenant")} />
+      <CtrlRow title="Sewerage"          amount={697.73} owner={draft.sewerage === "owner"}  onChange={(v) => set("sewerage",  v ? "owner" : "tenant")} />
       <CtrlRow title="Water Demand Levy" amount={65.08}  owner={draft.waterLevy === "owner"} onChange={(v) => set("waterLevy", v ? "owner" : "tenant")} />
-      <GreenBtn label="Save allocation" icon={Check} onPress={() => onSave(draft)} />
+      <GreenBtn label="Save settings" icon={Check} onPress={() => onSave(draft, parsedLimit)} />
+    </View>
+  );
+}
+
+/* ─── Token detail modal ──────────────────────────────────────────────── */
+function TokenModal({ token, onClose }: { token: Token; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const UtilIcon  = token.utility === "Water" ? Droplets : Bolt;
+  const unitLabel = token.utility === "Water" ? "L" : "kWh";
+  const groups    = token.token.split(" ");
+
+  function copyToken() {
+    navigator.clipboard?.writeText(token.token.replace(/ /g, ""));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <View style={S.modalOverlay}>
+      <Pressable style={S.modalBackdrop} onPress={onClose} />
+      <View style={S.modalSheet}>
+        {/* Handle */}
+        <View style={S.modalHandle} />
+
+        {/* Header row */}
+        <View style={S.modalHeaderRow}>
+          <View style={S.tokenBadge}>
+            <UtilIcon size={12} color={C.ink} />
+            <Text style={S.tokenBadgeText}>{token.utility}</Text>
+          </View>
+          <Pressable style={S.modalCloseBtn} onPress={onClose}>
+            <X size={16} color={C.t2} />
+          </Pressable>
+        </View>
+
+        {/* Instruction */}
+        <Text style={S.modalInstruct}>Enter this code at your meter</Text>
+
+        {/* Large token groups */}
+        <View style={S.modalTokenGroups}>
+          {groups.map((g, i) => (
+            <View key={i} style={S.modalTokenGroup}>
+              <Text style={S.modalTokenDigits}>{g}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Meta row */}
+        <View style={S.modalMeta}>
+          <View style={S.modalMetaItem}>
+            <Text style={S.cardLabel}>Amount paid</Text>
+            <Text style={S.modalMetaValue}>{money(token.amount)}</Text>
+          </View>
+          <View style={S.modalMetaItem}>
+            <Text style={S.cardLabel}>Units</Text>
+            <Text style={S.modalMetaValue}>{token.units.toFixed(2)} {unitLabel}</Text>
+          </View>
+          <View style={S.modalMetaItem}>
+            <Text style={S.cardLabel}>Date</Text>
+            <Text style={S.modalMetaValue}>{token.date}</Text>
+          </View>
+        </View>
+
+        {/* Copy button */}
+        <Pressable
+          style={[S.greenBtn, copied && { backgroundColor: C.mint }]}
+          onPress={copyToken}
+        >
+          <Text style={S.greenBtnText}>{copied ? "Copied!" : "Copy token"}</Text>
+          {copied ? <Check size={17} color={C.ink} /> : <Clipboard size={17} color={C.ink} />}
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -962,9 +1072,9 @@ function CardMetric({ label, value, alignRight }: { label: string; value: string
   );
 }
 
-function TokenCard({ token }: { token: Token }) {
+function TokenCard({ token, onPress }: { token: Token; onPress?: () => void }) {
   const [copied, setCopied] = useState(false);
-  const UtilIcon = token.utility === "Water" ? Droplets : Bolt;
+  const UtilIcon  = token.utility === "Water" ? Droplets : Bolt;
   const unitLabel = token.utility === "Water" ? "L" : "kWh";
 
   function copyToken() {
@@ -974,7 +1084,7 @@ function TokenCard({ token }: { token: Token }) {
   }
 
   return (
-    <View style={S.card}>
+    <Pressable style={S.card} onPress={onPress}>
       <View style={S.tokenHead}>
         <View style={S.tokenBadge}>
           <UtilIcon size={10} color={C.ink} />
@@ -992,7 +1102,7 @@ function TokenCard({ token }: { token: Token }) {
             : <Clipboard size={14} color={C.t3} />}
         </Pressable>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -1569,6 +1679,93 @@ const S = {
   toggleOn:      { backgroundColor: C.lime },
   toggleLabel:   { color: C.t3, fontWeight: "900" as const, fontSize: 11 },
   toggleLabelOn: { color: C.ink },
+
+  /* ── Token detail modal ── */
+  modalOverlay: {
+    position: "absolute" as const,
+    top: 0, left: 0, right: 0, bottom: 0,
+    zIndex: 40,
+    justifyContent: "flex-end" as const,
+  },
+  modalBackdrop: {
+    position: "absolute" as const,
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.6)",
+  },
+  modalSheet: {
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 22,
+    paddingBottom: 36,
+    backgroundColor: "#152010",
+    borderTopWidth: 1,
+    borderColor: C.cardBorder,
+    gap: 18,
+  },
+  modalHandle: {
+    alignSelf: "center" as const,
+    width: 40, height: 4,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    marginBottom: 4,
+  },
+  modalHeaderRow: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    alignItems: "center" as const,
+  },
+  modalCloseBtn: {
+    width: 34, height: 34,
+    borderRadius: 11,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  modalInstruct: {
+    color: C.t3,
+    fontWeight: "800" as const,
+    fontSize: 12,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.9,
+    textAlign: "center" as const,
+  },
+  modalTokenGroups: {
+    flexDirection: "row" as const,
+    flexWrap: "wrap" as const,
+    justifyContent: "center" as const,
+    gap: 10,
+  },
+  modalTokenGroup: {
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: C.cardHigh,
+    borderWidth: 1,
+    borderColor: C.limeBorder,
+  },
+  modalTokenDigits: {
+    color: C.lime,
+    fontFamily: "Space Grotesk",
+    fontSize: 28,
+    fontWeight: "700" as const,
+    letterSpacing: 2,
+  },
+  modalMeta: {
+    flexDirection: "row" as const,
+    justifyContent: "space-between" as const,
+    borderRadius: 16,
+    padding: 14,
+    backgroundColor: C.cardHigh,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+  },
+  modalMetaItem: { alignItems: "center" as const, gap: 4 },
+  modalMetaValue: {
+    color: C.t1,
+    fontFamily: "Space Grotesk",
+    fontSize: 15,
+    fontWeight: "700" as const,
+  },
 
   /* ── Ledger month nav ── */
   monthNav: {
