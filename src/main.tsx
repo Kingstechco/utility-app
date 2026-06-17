@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowDownLeft,
@@ -132,14 +132,37 @@ function genToken(): string {
 
 function uid() { return Math.random().toString(36).slice(2); }
 
+/* ─── Persistence ─────────────────────────────────────────────────────── */
+type CostOwner = "owner" | "tenant";
+interface CostAlloc { hosting: CostOwner; sewerage: CostOwner; waterLevy: CostOwner }
+
+const DEFAULT_ALLOC: CostAlloc = { hosting: "tenant", sewerage: "owner", waterLevy: "owner" };
+
+function load<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch { return fallback; }
+}
+
+function save(key: string, value: unknown) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* quota */ }
+}
+
 /* ─── App Shell ───────────────────────────────────────────────────────── */
 function App() {
   const [screen, setScreen]     = useState<Screen>("home");
-  const [balance, setBalance]   = useState(0.48);
-  const [tokenList, setTokenList] = useState<Token[]>(SEED_TOKENS);
-  const [txList, setTxList]     = useState<Transaction[]>(SEED_TXS);
+  const [balance, setBalance]   = useState(() => load("balance", 0.48));
+  const [tokenList, setTokenList] = useState<Token[]>(() => load("tokens", SEED_TOKENS));
+  const [txList, setTxList]     = useState<Transaction[]>(() => load("txs", SEED_TXS));
+  const [alloc, setAlloc]       = useState<CostAlloc>(() => load("alloc", DEFAULT_ALLOC));
   const [toast, setToast]       = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => { save("balance",  balance);   }, [balance]);
+  useEffect(() => { save("tokens",   tokenList); }, [tokenList]);
+  useEffect(() => { save("txs",      txList);    }, [txList]);
+  useEffect(() => { save("alloc",    alloc);     }, [alloc]);
 
   const spent = useMemo(
     () => txList.filter((t) => !t.in).reduce((s, t) => s + t.amount, 0),
@@ -242,7 +265,12 @@ function App() {
         )}
         {screen === "usage"   && <UsageScreen tokens={tokenList} />}
         {screen === "ledger"  && <LedgerScreen txList={txList} />}
-        {screen === "control" && <ControlScreen />}
+        {screen === "control" && (
+          <ControlScreen
+            alloc={alloc}
+            onSave={(a) => { setAlloc(a); showToast("Allocation saved"); }}
+          />
+        )}
       </ScrollView>
 
       {/* Tab bar */}
@@ -652,8 +680,13 @@ function LedgerScreen({ txList }: { txList: Transaction[] }) {
 }
 
 /* ─── Control ─────────────────────────────────────────────────────────── */
-function ControlScreen() {
-  const [ownerHosting, setOwnerHosting] = useState(false);
+function ControlScreen({ alloc, onSave }: { alloc: CostAlloc; onSave: (a: CostAlloc) => void }) {
+  const [draft, setDraft] = useState<CostAlloc>(alloc);
+
+  function set(key: keyof CostAlloc, val: CostOwner) {
+    setDraft((prev) => ({ ...prev, [key]: val }));
+  }
+
   return (
     <View style={S.stack}>
       <View style={[S.card, { flexDirection: "row", alignItems: "center", gap: 14 }]}>
@@ -667,10 +700,10 @@ function ControlScreen() {
       </View>
 
       <SectionHead title="Cost responsibility" />
-      <CtrlRow title="Hosting"           amount={90}     owner={ownerHosting} onChange={setOwnerHosting} />
-      <CtrlRow title="Sewerage"          amount={697.73} owner={true}         onChange={() => null} />
-      <CtrlRow title="Water Demand Levy" amount={65.08}  owner={true}         onChange={() => null} />
-      <GreenBtn label="Save allocation" icon={Check} />
+      <CtrlRow title="Hosting"           amount={90}     owner={draft.hosting === "owner"}  onChange={(v) => set("hosting",  v ? "owner" : "tenant")} />
+      <CtrlRow title="Sewerage"          amount={697.73} owner={draft.sewerage === "owner"} onChange={(v) => set("sewerage", v ? "owner" : "tenant")} />
+      <CtrlRow title="Water Demand Levy" amount={65.08}  owner={draft.waterLevy === "owner"} onChange={(v) => set("waterLevy", v ? "owner" : "tenant")} />
+      <GreenBtn label="Save allocation" icon={Check} onPress={() => onSave(draft)} />
     </View>
   );
 }
