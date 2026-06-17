@@ -7,6 +7,8 @@ import {
   BellOff,
   Bolt,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Clipboard,
   CreditCard,
   Droplets,
@@ -99,15 +101,6 @@ const SEED_NOTIFS: Notif[] = [
   { id: "n3", type: "info",    title: "Wallet recharged", body: "R550.00 added via Manual EFT.", time: "13 Jun", read: true },
 ];
 
-const usageData = [
-  { day: "M", water: 42, electricity: 58 },
-  { day: "T", water: 54, electricity: 62 },
-  { day: "W", water: 36, electricity: 71 },
-  { day: "T", water: 66, electricity: 74 },
-  { day: "F", water: 72, electricity: 88 },
-  { day: "S", water: 46, electricity: 49 },
-  { day: "S", water: 38, electricity: 44 },
-];
 
 const methods: Array<{ name: PaymentMethod; fee: string; icon: React.ElementType }> = [
   { name: "Instant EFT", fee: "1.6% min R1.50", icon: Smartphone  },
@@ -334,7 +327,7 @@ function App() {
             setScreen={setScreen}
           />
         )}
-        {screen === "usage"   && <UsageScreen tokens={tokenList} />}
+        {screen === "usage"   && <UsageScreen tokens={tokenList} txList={txList} />}
         {screen === "ledger"  && <LedgerScreen txList={txList} />}
         {screen === "control" && (
           <ControlScreen
@@ -621,18 +614,31 @@ function BuyScreen({
 }
 
 /* ─── Usage ───────────────────────────────────────────────────────────── */
-function UsageScreen({ tokens }: { tokens: Token[] }) {
+function UsageScreen({ tokens, txList }: { tokens: Token[]; txList: Transaction[] }) {
   const [utility, setUtility] = useState<Utility>("Electricity");
 
-  const max = Math.max(...usageData.map((u) => utility === "Water" ? u.water : u.electricity));
+  /* Last-7-days chart derived from real purchases */
+  const chartData = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      const dateStr  = fmtDate(d);
+      const dayLabel = d.toLocaleDateString("en-ZA", { weekday: "short" }).slice(0, 1);
+      const amount   = txList
+        .filter((t) => !t.in && t.utility === utility && t.date === dateStr)
+        .reduce((s, t) => s + t.amount, 0);
+      return { label: dayLabel, amount, dateStr };
+    });
+  }, [txList, utility]);
 
-  /* Derive total units purchased from token list */
-  const totalUnits = tokens
-    .filter((t) => t.utility === utility)
-    .reduce((s, t) => s + t.units, 0);
-  const weekUnits  = Math.round(totalUnits * 0.16); /* mock weekly slice */
-  const dailyAvg   = weekUnits > 0 ? Math.round(weekUnits / 7) : 0;
-  const unit        = utility === "Electricity" ? "kWh" : "L";
+  const maxAmount  = Math.max(...chartData.map((d) => d.amount), 1);
+  const weekSpend  = chartData.reduce((s, d) => s + d.amount, 0);
+  const totalUnits = tokens.filter((t) => t.utility === utility).reduce((s, t) => s + t.units, 0);
+  const unit       = utility === "Electricity" ? "kWh" : "L";
+
+  const peakIdx    = chartData.reduce((pi, d, i) => (d.amount > chartData[pi].amount ? i : pi), 0);
+  const peakLabel  = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][peakIdx] ?? "";
+  const hasSpend   = weekSpend > 0;
 
   return (
     <View style={S.stack}>
@@ -644,19 +650,23 @@ function UsageScreen({ tokens }: { tokens: Token[] }) {
           icons={{ Electricity: Bolt, Water: Droplets }}
         />
         <View style={S.usageMetrics}>
-          <CardMetric label="This week" value={`${weekUnits} ${unit}`} />
-          <CardMetric label="Daily avg"  value={`${dailyAvg} ${unit}`} alignRight />
+          <CardMetric label="Spent this week" value={money(weekSpend)} />
+          <CardMetric label="Total units"      value={`${totalUnits.toFixed(1)} ${unit}`} alignRight />
         </View>
         <View style={S.chart}>
-          {usageData.map((item, i) => {
-            const val = utility === "Water" ? item.water : item.electricity;
-            const pct = val / max;
+          {chartData.map((item, i) => {
+            const pct = item.amount / maxAmount;
+            const h   = item.amount > 0 ? Math.max(pct * 100, 6) : 2;
             return (
-              <View key={`${item.day}-${i}`} style={S.chartCol}>
+              <View key={i} style={S.chartCol}>
                 <View style={S.barTrack}>
-                  <View style={[S.bar, { height: `${pct * 100}%` as unknown as number }]} />
+                  <View style={[
+                    S.bar,
+                    { height: `${h}%` as unknown as number },
+                    i === peakIdx && item.amount > 0 && { backgroundColor: C.mint },
+                  ]} />
                 </View>
-                <Text style={S.barLabel}>{item.day}</Text>
+                <Text style={S.barLabel}>{item.label}</Text>
               </View>
             );
           })}
@@ -665,7 +675,7 @@ function UsageScreen({ tokens }: { tokens: Token[] }) {
 
       {/* Total purchased */}
       <View style={[S.card, { flexDirection: "row", justifyContent: "space-between", alignItems: "center" }]}>
-        <Text style={S.cardLabel}>Total {utility.toLowerCase()} purchased</Text>
+        <Text style={S.cardLabel}>All-time {utility.toLowerCase()} purchased</Text>
         <Text style={[S.metricValue, { color: C.lime }]}>{totalUnits.toFixed(1)} {unit}</Text>
       </View>
 
@@ -674,8 +684,19 @@ function UsageScreen({ tokens }: { tokens: Token[] }) {
           <Sparkles size={15} color={C.lime} />
         </View>
         <View style={S.flex1}>
-          <Text style={S.insightTitle}>Usage looks stable</Text>
-          <Text style={S.insightBody}>No unusual spikes detected for Unit 28-05 this week.</Text>
+          {hasSpend ? (
+            <>
+              <Text style={S.insightTitle}>Peak day: {peakLabel}</Text>
+              <Text style={S.insightBody}>
+                Highest {utility.toLowerCase()} spend this week was on {peakLabel} — {money(chartData[peakIdx].amount)}.
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={S.insightTitle}>No purchases this week</Text>
+              <Text style={S.insightBody}>Buy a token to see your spending trend here.</Text>
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -684,15 +705,24 @@ function UsageScreen({ tokens }: { tokens: Token[] }) {
 
 /* ─── Ledger ──────────────────────────────────────────────────────────── */
 type LedgerFilter = "All" | "Electricity" | "Water" | "Top-ups";
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function LedgerScreen({ txList }: { txList: Transaction[] }) {
-  const [filter, setFilter] = useState<LedgerFilter>("All");
+  const [filter, setFilter]           = useState<LedgerFilter>("All");
+  const [monthOffset, setMonthOffset] = useState(0); // 0 = current month
 
   const filters: LedgerFilter[] = ["All", "Electricity", "Water", "Top-ups"];
 
+  const now         = new Date();
+  const targetMonth = new Date(now.getFullYear(), now.getMonth() + monthOffset);
+  const monthKey    = MONTH_NAMES[targetMonth.getMonth()];
+  const monthLabel  = `${monthKey} ${targetMonth.getFullYear()}`;
+
   const visible = txList.filter((tx) => {
-    if (filter === "All")         return true;
-    if (filter === "Top-ups")     return tx.in;
+    const txMonth = tx.date.split(" ")[1];   // "Jun" from "12 Jun"
+    if (txMonth !== monthKey)  return false;
+    if (filter === "All")      return true;
+    if (filter === "Top-ups")  return tx.in;
     return tx.utility === filter;
   });
 
@@ -701,6 +731,23 @@ function LedgerScreen({ txList }: { txList: Transaction[] }) {
 
   return (
     <View style={S.stack}>
+      {/* Month navigator */}
+      <View style={S.monthNav}>
+        <Pressable
+          style={S.monthChevron}
+          onPress={() => setMonthOffset((o) => o - 1)}
+        >
+          <ChevronLeft size={18} color={C.t2} />
+        </Pressable>
+        <Text style={S.monthLabel}>{monthLabel}</Text>
+        <Pressable
+          style={[S.monthChevron, monthOffset === 0 && { opacity: 0.3 }]}
+          onPress={() => monthOffset < 0 && setMonthOffset((o) => o + 1)}
+        >
+          <ChevronRight size={18} color={C.t2} />
+        </Pressable>
+      </View>
+
       {/* Filter pills */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={[S.filterRow, { paddingBottom: 4 }]}>
@@ -1505,6 +1552,32 @@ const S = {
   toggleOn:      { backgroundColor: C.lime },
   toggleLabel:   { color: C.t3, fontWeight: "900" as const, fontSize: 11 },
   toggleLabelOn: { color: C.ink },
+
+  /* ── Ledger month nav ── */
+  monthNav: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    borderRadius: 18,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+  },
+  monthChevron: {
+    width: 34, height: 34,
+    borderRadius: 10,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: C.cardHigh,
+  },
+  monthLabel: {
+    color: C.t1,
+    fontFamily: "Space Grotesk",
+    fontWeight: "700" as const,
+    fontSize: 17,
+  },
 
   /* ── Ledger date group ── */
   ledgerDate: {
