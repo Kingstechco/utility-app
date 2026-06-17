@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowDownLeft,
+  ArrowLeft,
   ArrowUpRight,
   Bell,
   BellOff,
@@ -266,9 +267,16 @@ function App() {
     <View style={S.app}>
       {/* Header */}
       <View style={S.header}>
-        <View>
-          <Text style={S.eyebrow}>Unit 28-05</Text>
-          <Text style={S.pageTitle}>{title}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          {screen === "recharge" && (
+            <Pressable style={S.backBtn} onPress={() => setScreen("home")}>
+              <ArrowLeft size={18} color={C.t1} />
+            </Pressable>
+          )}
+          <View>
+            <Text style={S.eyebrow}>Unit 28-05</Text>
+            <Text style={S.pageTitle}>{title}</Text>
+          </View>
         </View>
         <Pressable style={S.bellBtn} onPress={openNotifs}>
           <Bell size={18} color={C.t1} />
@@ -1067,6 +1075,15 @@ const S = {
     fontWeight: "700" as const,
     fontSize: 30,
     letterSpacing: -0.3,
+  },
+  backBtn: {
+    width: 40, height: 40,
+    borderRadius: 13,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
   },
   bellBtn: {
     width: 44, height: 44,
