@@ -39,6 +39,7 @@ interface Token {
   token: string;
   units: number;
   utility: Utility;
+  copyCount?: number;
 }
 
 interface Transaction {
@@ -230,6 +231,14 @@ function App() {
     setScreen("home");
   }
 
+  function handleCopyToken(code: string) {
+    setTokenList((prev) =>
+      prev.map((t) =>
+        t.token === code ? { ...t, copyCount: (t.copyCount ?? 0) + 1 } : t
+      )
+    );
+  }
+
   function handleBuyToken(utility: Utility, amount: number) {
     const units   = +(amount / PRICE_PER_UNIT[utility]).toFixed(2);
     const today   = fmtDate(new Date());
@@ -323,6 +332,7 @@ function App() {
             tokens={tokenList}
             setScreen={setScreen}
             copyRef={copyReference}
+            onCopyToken={handleCopyToken}
           />
         )}
         {screen === "recharge" && (
@@ -375,10 +385,11 @@ function App() {
 
 /* ─── Home ────────────────────────────────────────────────────────────── */
 function HomeScreen({
-  balance, spent, spendLimit, tokens, setScreen, copyRef,
+  balance, spent, spendLimit, tokens, setScreen, copyRef, onCopyToken,
 }: {
   balance: number; spent: number; spendLimit: number; tokens: Token[];
   setScreen: (s: Screen) => void; copyRef: () => void;
+  onCopyToken: (code: string) => void;
 }) {
   const [activeToken, setActiveToken] = useState<Token | null>(null);
   const progressPct = Math.min(100, (spent / spendLimit) * 100);
@@ -435,12 +446,12 @@ function HomeScreen({
       {tokens.length === 0
         ? <Text style={[S.cardLabel, { textAlign: "center", paddingVertical: 24 }]}>No tokens yet</Text>
         : tokens.slice(0, 5).map((t) => (
-            <TokenCard key={t.token} token={t} onPress={() => setActiveToken(t)} />
+            <TokenCard key={t.token} token={t} onPress={() => setActiveToken(t)} onCopy={onCopyToken} />
           ))
       }
 
       {activeToken && (
-        <TokenModal token={activeToken} onClose={() => setActiveToken(null)} />
+        <TokenModal token={activeToken} onClose={() => setActiveToken(null)} onCopy={onCopyToken} />
       )}
     </View>
   );
@@ -886,14 +897,18 @@ function ControlScreen({ alloc, spendLimit, onSave }: {
 }
 
 /* ─── Token detail modal ──────────────────────────────────────────────── */
-function TokenModal({ token, onClose }: { token: Token; onClose: () => void }) {
+function TokenModal({ token, onClose, onCopy }: {
+  token: Token; onClose: () => void; onCopy?: (code: string) => void;
+}) {
   const [copied, setCopied] = useState(false);
   const UtilIcon  = token.utility === "Water" ? Droplets : Bolt;
   const unitLabel = token.utility === "Water" ? "L" : "kWh";
   const groups    = token.token.split(" ");
+  const count     = token.copyCount ?? 0;
 
   function copyToken() {
     navigator.clipboard?.writeText(token.token.replace(/ /g, ""));
+    onCopy?.(token.token);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -916,8 +931,16 @@ function TokenModal({ token, onClose }: { token: Token; onClose: () => void }) {
           </Pressable>
         </View>
 
-        {/* Instruction */}
-        <Text style={S.modalInstruct}>Enter this code at your meter</Text>
+        {/* Instruction + usage count */}
+        <View style={{ alignItems: "center", gap: 8 }}>
+          <Text style={S.modalInstruct}>Enter this code at your meter</Text>
+          <View style={[S.copyBadge, { paddingVertical: 5, paddingHorizontal: 12 }]}>
+            <Check size={11} color={count > 0 ? C.mint : C.t3} />
+            <Text style={[S.copyBadgeText, { color: count > 0 ? C.mint : C.t3, fontSize: 12 }]}>
+              {count === 0 ? "Never copied" : `Copied ${count}×`}
+            </Text>
+          </View>
+        </View>
 
         {/* Large token groups */}
         <View style={S.modalTokenGroups}>
@@ -1072,13 +1095,17 @@ function CardMetric({ label, value, alignRight }: { label: string; value: string
   );
 }
 
-function TokenCard({ token, onPress }: { token: Token; onPress?: () => void }) {
+function TokenCard({ token, onPress, onCopy }: {
+  token: Token; onPress?: () => void; onCopy?: (code: string) => void;
+}) {
   const [copied, setCopied] = useState(false);
   const UtilIcon  = token.utility === "Water" ? Droplets : Bolt;
   const unitLabel = token.utility === "Water" ? "L" : "kWh";
+  const count     = token.copyCount ?? 0;
 
   function copyToken() {
     navigator.clipboard?.writeText(token.token.replace(/ /g, ""));
+    onCopy?.(token.token);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
@@ -1090,7 +1117,15 @@ function TokenCard({ token, onPress }: { token: Token; onPress?: () => void }) {
           <UtilIcon size={10} color={C.ink} />
           <Text style={S.tokenBadgeText}>{token.utility}</Text>
         </View>
-        <Text style={S.tokenDate}>{token.date}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {count > 0 && (
+            <View style={S.copyBadge}>
+              <Check size={9} color={C.mint} />
+              <Text style={S.copyBadgeText}>{count}×</Text>
+            </View>
+          )}
+          <Text style={S.tokenDate}>{token.date}</Text>
+        </View>
       </View>
       <Text style={S.tokenCode}>{token.token}</Text>
       <View style={S.tokenFoot}>
@@ -1099,7 +1134,7 @@ function TokenCard({ token, onPress }: { token: Token; onPress?: () => void }) {
         <Pressable onPress={copyToken}>
           {copied
             ? <Check size={14} color={C.lime} />
-            : <Clipboard size={14} color={C.t3} />}
+            : <Clipboard size={14} color={count > 0 ? C.t2 : C.t3} />}
         </Pressable>
       </View>
     </Pressable>
@@ -1679,6 +1714,24 @@ const S = {
   toggleOn:      { backgroundColor: C.lime },
   toggleLabel:   { color: C.t3, fontWeight: "900" as const, fontSize: 11 },
   toggleLabelOn: { color: C.ink },
+
+  /* ── Copy count badge ── */
+  copyBadge: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 4,
+    borderRadius: 999,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    backgroundColor: "rgba(0,212,154,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(0,212,154,0.2)",
+  },
+  copyBadgeText: {
+    color: C.mint,
+    fontWeight: "900" as const,
+    fontSize: 10,
+  },
 
   /* ── Token detail modal ── */
   modalOverlay: {
