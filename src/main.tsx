@@ -28,35 +28,45 @@ type Screen = "home" | "recharge" | "buy" | "usage" | "ledger" | "control";
 type Utility = "Electricity" | "Water";
 type PaymentMethod = "Instant EFT" | "Card" | "Manual EFT" | "Retail";
 
-/* ─── Brand Design Tokens ─────────────────────────────────────────────── */
+/* ─── Brand Tokens — Chime-inspired forest green palette ─────────────── */
 const C = {
-  /* backgrounds */
-  bg: "#080d1a",
-  /* glass surfaces */
-  glass: "rgba(255,255,255,0.07)",
-  glassMid: "rgba(255,255,255,0.11)",
-  glassHigh: "rgba(255,255,255,0.16)",
-  /* borders */
-  border: "rgba(255,255,255,0.1)",
-  borderBright: "rgba(255,255,255,0.18)",
-  borderLime: "rgba(201,255,87,0.3)",
-  borderRed: "rgba(255,107,88,0.3)",
-  /* brand accent — lime is the ONLY primary accent */
-  lime: "#c9ff57",
-  /* supporting palette */
-  mint: "#00d39b",
-  aqua: "#47d7ff",
-  blue: "#5868ff",
-  violet: "#8b5cf6",
-  amber: "#ffb23f",
-  red: "#ff6b58",
-  /* text */
-  white: "#ffffff",
+  /* Background (deep forest green) */
+  bg: "#061a0a",
+
+  /* Primary accent — bright green */
+  green:       "#00d462",
+  greenDim:    "rgba(0,212,98,0.12)",
+  greenBorder: "rgba(0,212,98,0.28)",
+
+  /* White content cards */
+  card:       "#ffffff",
+  cardAlt:    "#f2f8f4",
+  cardBorder: "rgba(6,26,10,0.07)",
+
+  /* Text ON dark (hero / header areas) */
   t1: "#ffffff",
-  t2: "rgba(255,255,255,0.6)",
-  t3: "rgba(255,255,255,0.35)",
-  /* ink — used only ON lime/coloured surfaces */
-  ink: "#07111f",
+  t2: "rgba(255,255,255,0.62)",
+  t3: "rgba(255,255,255,0.38)",
+
+  /* Text ON white cards */
+  c1: "#071a0c",   /* primary */
+  c2: "#3a6646",   /* secondary */
+  c3: "#7a9b82",   /* muted */
+
+  /* Semantic colours */
+  red:       "#ff3b5c",
+  redBg:     "#fff0f3",
+  redBorder: "rgba(255,59,92,0.2)",
+  amber:     "#ff9f00",
+  amberBg:   "#fff8ec",
+  blue:      "#0a84ff",
+
+  /* Glass surface (hero card / overlay) */
+  glass:       "rgba(255,255,255,0.07)",
+  glassBorder: "rgba(255,255,255,0.12)",
+
+  /* Used only ON coloured surfaces */
+  ink: "#061a0a",
 };
 
 /* ─── Data ────────────────────────────────────────────────────────────── */
@@ -77,10 +87,10 @@ const usage = [
 ];
 
 const transactions = [
-  { date: "13 Jun", label: "Wallet top-up",      detail: "Manual EFT",   amount: 550, in: true  },
-  { date: "12 Jun", label: "Electricity token",   detail: "60.40 units",  amount: 300, in: false },
-  { date: "12 Jun", label: "Electricity token",   detail: "33.60 units",  amount: 167, in: false },
-  { date: "01 Jun", label: "Hosting",             detail: "Tenant alloc", amount: 90,  in: false },
+  { date: "13 Jun", label: "Wallet top-up",    detail: "Manual EFT",   amount: 550, in: true  },
+  { date: "12 Jun", label: "Electricity token", detail: "60.40 units",  amount: 300, in: false },
+  { date: "12 Jun", label: "Electricity token", detail: "33.60 units",  amount: 167, in: false },
+  { date: "01 Jun", label: "Hosting",           detail: "Tenant alloc", amount: 90,  in: false },
 ];
 
 const methods: Array<{ name: PaymentMethod; fee: string; icon: React.ElementType }> = [
@@ -91,11 +101,11 @@ const methods: Array<{ name: PaymentMethod; fee: string; icon: React.ElementType
 ];
 
 const nav: Array<{ screen: Screen; label: string; icon: React.ElementType }> = [
-  { screen: "home",    label: "Home",    icon: Home     },
-  { screen: "recharge",label: "Recharge",icon: Wallet   },
-  { screen: "buy",     label: "Buy",     icon: Bolt     },
-  { screen: "usage",   label: "Pulse",   icon: LineChart},
-  { screen: "control", label: "Control", icon: Settings },
+  { screen: "home",     label: "Home",    icon: Home      },
+  { screen: "recharge", label: "Recharge",icon: Wallet    },
+  { screen: "buy",      label: "Buy",     icon: Bolt      },
+  { screen: "usage",    label: "Pulse",   icon: LineChart },
+  { screen: "control",  label: "Control", icon: Settings  },
 ];
 
 function money(v: number) {
@@ -107,8 +117,10 @@ function App() {
   const [screen, setScreen] = useState<Screen>("home");
   const [copied, setCopied] = useState(false);
 
-  const title = { home: "Metering", recharge: "Recharge", buy: "Buy token",
-                  usage: "Usage pulse", ledger: "Ledger", control: "Control" }[screen];
+  const title = {
+    home: "Metering", recharge: "Recharge", buy: "Buy token",
+    usage: "Usage pulse", ledger: "Ledger", control: "Control",
+  }[screen];
 
   function copyReference() {
     navigator.clipboard?.writeText("100477911");
@@ -118,10 +130,9 @@ function App() {
 
   return (
     <View style={S.app}>
-      {/* Ambient glow orbs — blurs through glass cards */}
+      {/* Ambient green orbs */}
       <View style={S.orb1} />
       <View style={S.orb2} />
-      <View style={S.orb3} />
 
       {/* Header */}
       <View style={S.header}>
@@ -130,12 +141,12 @@ function App() {
           <Text style={S.pageTitle}>{title}</Text>
         </View>
         <Pressable style={S.bellBtn}>
-          <Bell size={18} color={C.white} />
+          <Bell size={18} color={C.t1} />
           <View style={S.bellDot} />
         </Pressable>
       </View>
 
-      {/* Toast notification */}
+      {/* Toast */}
       {copied && (
         <View style={S.toast}>
           <Check size={14} color={C.ink} />
@@ -144,23 +155,27 @@ function App() {
       )}
 
       {/* Screen content */}
-      <ScrollView style={S.scroll} contentContainerStyle={S.scrollContent} showsVerticalScrollIndicator={false}>
-        {screen === "home"     && <HomeScreen    setScreen={setScreen} copyReference={copyReference} />}
-        {screen === "recharge" && <RechargeScreen copyReference={copyReference} />}
+      <ScrollView
+        style={S.scroll}
+        contentContainerStyle={S.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {screen === "home"     && <HomeScreen    setScreen={setScreen} copyRef={copyReference} />}
+        {screen === "recharge" && <RechargeScreen copyRef={copyReference} />}
         {screen === "buy"      && <BuyScreen />}
         {screen === "usage"    && <UsageScreen />}
         {screen === "ledger"   && <LedgerScreen />}
         {screen === "control"  && <ControlScreen />}
       </ScrollView>
 
-      {/* Glass tab bar */}
+      {/* Tab bar */}
       <View style={S.tabBar}>
         {nav.map((item) => {
           const active = item.screen === screen;
           return (
             <Pressable
               key={item.screen}
-              style={[S.tabItem, active && S.tabItemActive]}
+              style={[S.tab, active && S.tabActive]}
               onPress={() => setScreen(item.screen)}
             >
               <item.icon size={20} color={active ? C.ink : C.t2} />
@@ -174,30 +189,27 @@ function App() {
 }
 
 /* ─── Home ────────────────────────────────────────────────────────────── */
-function HomeScreen({ setScreen, copyReference }: { setScreen: (s: Screen) => void; copyReference: () => void }) {
+function HomeScreen({ setScreen, copyRef }: { setScreen: (s: Screen) => void; copyRef: () => void }) {
   return (
     <View style={S.stack}>
-      {/* Hero balance card */}
-      <View style={S.heroCard}>
-        {/* Subtle lime glow orb inside the card */}
-        <View style={S.heroGlow} />
-        <View style={S.heroTop}>
-          <View>
-            <Text style={S.heroLabel}>Available balance</Text>
-            <Text style={S.heroAmount}>{money(0.48)}</Text>
-          </View>
-          <View style={S.heroIconWrap}>
-            <Wallet size={24} color={C.lime} />
-          </View>
-        </View>
-        <Pressable style={S.refPill} onPress={copyReference}>
+      {/* Hero balance — floats on dark green bg */}
+      <View style={S.hero}>
+        <Text style={S.heroLabel}>Available balance</Text>
+        <Text style={S.heroAmount}>{money(0.48)}</Text>
+        <Pressable style={S.refPill} onPress={copyRef}>
           <Text style={S.refLabel}>Wallet ref</Text>
           <Text style={S.refValue}>100477911</Text>
-          <Clipboard size={13} color={C.t2} />
+          <Clipboard size={13} color={C.t3} />
         </Pressable>
         <View style={S.heroStats}>
-          <Metric label="Spent this month" value={money(547)} />
-          <Metric label="Limit" value={money(10000)} alignRight />
+          <View>
+            <Text style={S.heroStatLabel}>Spent this month</Text>
+            <Text style={S.heroStatValue}>{money(547)}</Text>
+          </View>
+          <View style={S.alignRight}>
+            <Text style={S.heroStatLabel}>Limit</Text>
+            <Text style={S.heroStatValue}>{money(10000)}</Text>
+          </View>
         </View>
         <View style={S.progressTrack}>
           <View style={S.progressFill} />
@@ -206,14 +218,14 @@ function HomeScreen({ setScreen, copyReference }: { setScreen: (s: Screen) => vo
 
       {/* Quick-action dock */}
       <View style={S.dock}>
-        <ActionBtn label="Recharge" sub="Add funds"  icon={Wallet}    tint={C.lime}   onPress={() => setScreen("recharge")} />
-        <ActionBtn label="Buy token" sub="Power"     icon={Bolt}      tint={C.aqua}   onPress={() => setScreen("buy")}      />
-        <ActionBtn label="Pulse"    sub="Usage"      icon={LineChart}  tint={C.violet} onPress={() => setScreen("usage")}    />
+        <ActionBtn label="Recharge" sub="Add funds" icon={Wallet}   tint={C.green} onPress={() => setScreen("recharge")} />
+        <ActionBtn label="Buy"      sub="Token"     icon={Bolt}     tint={C.blue}  onPress={() => setScreen("buy")}      />
+        <ActionBtn label="Pulse"    sub="Usage"     icon={LineChart} tint={C.amber} onPress={() => setScreen("usage")}   />
       </View>
 
       {/* Alert */}
       <View style={S.alertCard}>
-        <View style={S.alertIconWrap}>
+        <View style={S.alertIcon}>
           <Lock size={15} color={C.red} />
         </View>
         <View style={S.flex1}>
@@ -223,14 +235,14 @@ function HomeScreen({ setScreen, copyReference }: { setScreen: (s: Screen) => vo
       </View>
 
       {/* Latest tokens */}
-      <SectionHeader title="Latest tokens" action="Ledger" onPress={() => setScreen("ledger")} />
+      <SectionHead title="Latest tokens" action="Ledger" onPress={() => setScreen("ledger")} />
       {tokens.map((t) => <TokenCard key={t.token} token={t} />)}
     </View>
   );
 }
 
 /* ─── Recharge ────────────────────────────────────────────────────────── */
-function RechargeScreen({ copyReference }: { copyReference: () => void }) {
+function RechargeScreen({ copyRef }: { copyRef: () => void }) {
   const [amount, setAmount] = useState(250);
   const [method, setMethod] = useState<PaymentMethod>("Instant EFT");
   const fee = useMemo(() => {
@@ -243,24 +255,19 @@ function RechargeScreen({ copyReference }: { copyReference: () => void }) {
   return (
     <View style={S.stack}>
       {/* Amount picker */}
-      <View style={S.glassCard}>
+      <View style={S.card}>
         <Text style={S.cardLabel}>Recharge value</Text>
-        <Text style={S.bigAmount}>{money(amount)}</Text>
+        <Text style={S.bigNumber}>{money(amount)}</Text>
         <View style={S.chipRow}>
           {[100, 250, 500, 1000].map((v) => (
-            <Pressable
-              key={v}
-              style={[S.chip, amount === v && S.chipActive]}
-              onPress={() => setAmount(v)}
-            >
+            <Pressable key={v} style={[S.chip, amount === v && S.chipActive]} onPress={() => setAmount(v)}>
               <Text style={[S.chipText, amount === v && S.chipTextActive]}>{money(v)}</Text>
             </Pressable>
           ))}
         </View>
       </View>
 
-      {/* Payment method */}
-      <SectionHeader title="Payment rail" />
+      <SectionHead title="Payment rail" />
       <View style={S.stack}>
         {methods.map((item) => {
           const sel = method === item.name;
@@ -271,44 +278,43 @@ function RechargeScreen({ copyReference }: { copyReference: () => void }) {
               onPress={() => setMethod(item.name)}
             >
               <View style={[S.methodIcon, sel && S.methodIconActive]}>
-                <item.icon size={17} color={sel ? C.ink : C.t2} />
+                <item.icon size={17} color={sel ? C.ink : C.c2} />
               </View>
               <View style={S.flex1}>
                 <Text style={S.methodName}>{item.name}</Text>
                 <Text style={S.methodFee}>{item.fee}</Text>
               </View>
-              {sel && <Check size={16} color={C.lime} />}
+              {sel && <Check size={16} color={C.green} />}
             </Pressable>
           );
         })}
       </View>
 
-      {/* Manual EFT bank details */}
       {method === "Manual EFT" && (
-        <View style={S.glassCard}>
+        <View style={S.card}>
           <Text style={S.cardTitle}>Manual EFT details</Text>
           <BankRow label="Account" value="SmS" />
           <BankRow label="Bank"    value="FNB" />
           <BankRow label="Number"  value="62937164614" />
-          <Pressable style={S.limeRow} onPress={copyReference}>
-            <Text style={S.limeRowText}>Use reference 100477911</Text>
+          <Pressable style={S.greenRow} onPress={copyRef}>
+            <Text style={S.greenRowText}>Use reference 100477911</Text>
             <Clipboard size={15} color={C.ink} />
           </Pressable>
         </View>
       )}
 
-      {/* Checkout summary */}
-      <View style={S.checkoutCard}>
-        <View style={S.checkoutRow}>
-          <Metric label="Amount" value={money(amount)} />
-          <Metric label="Fees" value={money(fee)} alignRight />
+      {/* Checkout */}
+      <View style={S.card}>
+        <View style={S.checkoutMetrics}>
+          <CardMetric label="Amount" value={money(amount)} />
+          <CardMetric label="Fees"   value={money(fee)} alignRight />
         </View>
-        <View style={S.checkoutDivider} />
-        <View style={S.checkoutTotalRow}>
-          <Text style={S.checkoutTotalLabel}>Total to pay</Text>
-          <Text style={S.checkoutTotalValue}>{money(amount + fee)}</Text>
+        <View style={S.divider} />
+        <View style={S.checkoutTotal}>
+          <Text style={S.totalLabel}>Total to pay</Text>
+          <Text style={S.totalValue}>{money(amount + fee)}</Text>
         </View>
-        <PrimaryBtn label="Continue recharge" icon={ArrowUpRight} />
+        <GreenBtn label="Continue recharge" icon={ArrowUpRight} />
       </View>
     </View>
   );
@@ -318,37 +324,36 @@ function RechargeScreen({ copyReference }: { copyReference: () => void }) {
 function BuyScreen() {
   const [utility, setUtility] = useState<Utility>("Electricity");
   const [amount, setAmount] = useState("100");
-  const num = Number(amount || 0);
-  const units = utility === "Electricity" ? num / 4.97 : num / 22.4;
+  const units = (Number(amount || 0)) / (utility === "Electricity" ? 4.97 : 22.4);
 
   return (
     <View style={S.stack}>
-      <View style={S.glassCard}>
-        <Segment
+      <View style={S.card}>
+        <Seg
           options={["Electricity", "Water"] as Utility[]}
           active={utility}
           onChange={(v) => setUtility(v as Utility)}
           icons={{ Electricity: Bolt, Water: Droplets }}
         />
         <Text style={[S.cardLabel, { marginTop: 18 }]}>Token amount</Text>
-        <View style={S.amountInput}>
-          <Text style={S.amountCurrency}>R</Text>
+        <View style={S.numInput}>
+          <Text style={S.numCurrency}>R</Text>
           <TextInput
             value={amount}
             onChangeText={setAmount}
             keyboardType="numeric"
-            style={S.amountField}
+            style={S.numField}
           />
         </View>
         <View style={S.estimateRow}>
-          <Gauge size={16} color={C.lime} />
+          <Gauge size={16} color={C.green} />
           <Text style={S.estimateLabel}>Estimated units</Text>
           <Text style={S.estimateValue}>{units.toFixed(2)}</Text>
         </View>
       </View>
 
       <View style={S.alertCard}>
-        <View style={S.alertIconWrap}>
+        <View style={S.alertIcon}>
           <Lock size={15} color={C.red} />
         </View>
         <View style={S.flex1}>
@@ -357,7 +362,7 @@ function BuyScreen() {
         </View>
       </View>
 
-      <PrimaryBtn label="Recharge first" icon={Wallet} />
+      <GreenBtn label="Recharge first" icon={Wallet} />
     </View>
   );
 }
@@ -365,26 +370,25 @@ function BuyScreen() {
 /* ─── Usage ───────────────────────────────────────────────────────────── */
 function UsageScreen() {
   const [utility, setUtility] = useState<Utility>("Water");
-  const maxVal = Math.max(...usage.map((u) => utility === "Water" ? u.water : u.electricity));
+  const max = Math.max(...usage.map((u) => utility === "Water" ? u.water : u.electricity));
 
   return (
     <View style={S.stack}>
-      <View style={S.glassCard}>
-        <Segment
+      <View style={S.card}>
+        <Seg
           options={["Water", "Electricity"] as Utility[]}
           active={utility}
           onChange={(v) => setUtility(v as Utility)}
           icons={{ Water: Droplets, Electricity: Bolt }}
         />
         <View style={S.usageMetrics}>
-          <Metric label="This week" value={utility === "Water" ? "354 L" : "446 kWh"} />
-          <Metric label="Daily avg" value={utility === "Water" ? "51 L" : "64 kWh"} alignRight />
+          <CardMetric label="This week" value={utility === "Water" ? "354 L" : "446 kWh"} />
+          <CardMetric label="Daily avg"  value={utility === "Water" ? "51 L"  : "64 kWh"}  alignRight />
         </View>
-        {/* Bar chart */}
         <View style={S.chart}>
           {usage.map((item, i) => {
             const val = utility === "Water" ? item.water : item.electricity;
-            const pct = val / maxVal;
+            const pct = val / max;
             return (
               <View key={`${item.day}-${i}`} style={S.chartCol}>
                 <View style={S.barTrack}>
@@ -397,10 +401,9 @@ function UsageScreen() {
         </View>
       </View>
 
-      {/* Insight card */}
       <View style={S.insightCard}>
         <View style={S.insightIcon}>
-          <Sparkles size={16} color={C.lime} />
+          <Sparkles size={15} color={C.green} />
         </View>
         <View style={S.flex1}>
           <Text style={S.insightTitle}>Usage looks stable</Text>
@@ -422,7 +425,7 @@ function LedgerScreen() {
       </View>
       {transactions.map((item) => (
         <View key={`${item.label}-${item.date}-${item.amount}`} style={S.txRow}>
-          <View style={[S.txIcon, item.in ? S.txIconIn : S.txIconOut]}>
+          <View style={[S.txIcon, item.in ? S.txIn : S.txOut]}>
             {item.in
               ? <ArrowDownLeft size={16} color={C.ink} />
               : <ArrowUpRight  size={16} color={C.ink} />}
@@ -431,8 +434,8 @@ function LedgerScreen() {
             <Text style={S.txTitle}>{item.label}</Text>
             <Text style={S.txSub}>{item.detail}</Text>
           </View>
-          <View style={S.txRight}>
-            <Text style={[S.txAmount, item.in ? S.txAmountIn : S.txAmountOut]}>
+          <View style={S.alignRight}>
+            <Text style={[S.txAmount, item.in ? S.txAmtIn : S.txAmtOut]}>
               {item.in ? "+" : "-"}{money(item.amount)}
             </Text>
             <Text style={S.txDate}>{item.date}</Text>
@@ -448,9 +451,8 @@ function ControlScreen() {
   const [ownerHosting, setOwnerHosting] = useState(false);
   return (
     <View style={S.stack}>
-      {/* Profile card */}
-      <View style={S.profileCard}>
-        <View style={S.profileAvatar}>
+      <View style={[S.card, { flexDirection: "row", alignItems: "center", gap: 14 }]}>
+        <View style={S.avatar}>
           <ShieldCheck size={22} color={C.ink} />
         </View>
         <View style={S.flex1}>
@@ -459,21 +461,21 @@ function ControlScreen() {
         </View>
       </View>
 
-      <SectionHeader title="Cost responsibility" />
-      <ControlRow title="Hosting"           amount={90}     owner={ownerHosting} onChange={setOwnerHosting} />
-      <ControlRow title="Sewerage"          amount={697.73} owner={true}         onChange={() => null}       />
-      <ControlRow title="Water Demand Levy" amount={65.08}  owner={true}         onChange={() => null}       />
-      <PrimaryBtn label="Save allocation" icon={Check} />
+      <SectionHead title="Cost responsibility" />
+      <CtrlRow title="Hosting"           amount={90}     owner={ownerHosting} onChange={setOwnerHosting} />
+      <CtrlRow title="Sewerage"          amount={697.73} owner={true}         onChange={() => null} />
+      <CtrlRow title="Water Demand Levy" amount={65.08}  owner={true}         onChange={() => null} />
+      <GreenBtn label="Save allocation" icon={Check} />
     </View>
   );
 }
 
-/* ─── Reusable components ─────────────────────────────────────────────── */
+/* ─── Shared components ───────────────────────────────────────────────── */
 function ActionBtn({ label, sub, icon: Icon, tint, onPress }:
   { label: string; sub: string; icon: React.ElementType; tint: string; onPress: () => void }) {
   return (
     <Pressable style={S.actionBtn} onPress={onPress}>
-      <View style={[S.actionIcon, { backgroundColor: `${tint}22` }]}>
+      <View style={[S.actionIcon, { backgroundColor: `${tint}1a` }]}>
         <Icon size={20} color={tint} />
       </View>
       <Text style={S.actionSub}>{label}</Text>
@@ -482,17 +484,17 @@ function ActionBtn({ label, sub, icon: Icon, tint, onPress }:
   );
 }
 
-function Segment({ options, active, onChange, icons }:
+function Seg({ options, active, onChange, icons }:
   { options: string[]; active: string; onChange: (v: string) => void; icons: Record<string, React.ElementType> }) {
   return (
-    <View style={S.segment}>
+    <View style={S.seg}>
       {options.map((opt) => {
-        const isActive = opt === active;
+        const on = opt === active;
         const Icon = icons[opt];
         return (
-          <Pressable key={opt} style={[S.segItem, isActive && S.segItemActive]} onPress={() => onChange(opt)}>
-            {Icon && <Icon size={15} color={isActive ? C.ink : C.t2} />}
-            <Text style={[S.segLabel, isActive && S.segLabelActive]}>{opt}</Text>
+          <Pressable key={opt} style={[S.segItem, on && S.segItemActive]} onPress={() => onChange(opt)}>
+            {Icon && <Icon size={15} color={on ? C.ink : C.c2} />}
+            <Text style={[S.segLabel, on && S.segLabelActive]}>{opt}</Text>
           </Pressable>
         );
       })}
@@ -500,18 +502,9 @@ function Segment({ options, active, onChange, icons }:
   );
 }
 
-function Metric({ label, value, alignRight }: { label: string; value: string; alignRight?: boolean }) {
+function SectionHead({ title, action, onPress }: { title: string; action?: string; onPress?: () => void }) {
   return (
-    <View style={alignRight ? S.alignRight : undefined}>
-      <Text style={S.metricLabel}>{label}</Text>
-      <Text style={S.metricValue}>{value}</Text>
-    </View>
-  );
-}
-
-function SectionHeader({ title, action, onPress }: { title: string; action?: string; onPress?: () => void }) {
-  return (
-    <View style={S.sectionHeader}>
+    <View style={S.sectionHead}>
       <Text style={S.sectionTitle}>{title}</Text>
       {action && (
         <Pressable onPress={onPress}>
@@ -522,21 +515,30 @@ function SectionHeader({ title, action, onPress }: { title: string; action?: str
   );
 }
 
+function CardMetric({ label, value, alignRight }: { label: string; value: string; alignRight?: boolean }) {
+  return (
+    <View style={alignRight ? S.alignRight : undefined}>
+      <Text style={S.metricLabel}>{label}</Text>
+      <Text style={S.metricValue}>{value}</Text>
+    </View>
+  );
+}
+
 function TokenCard({ token }: { token: (typeof tokens)[number] }) {
   return (
-    <View style={S.tokenCard}>
-      <View style={S.tokenHeader}>
+    <View style={S.card}>
+      <View style={S.tokenHead}>
         <View style={S.tokenBadge}>
-          <Bolt size={11} color={C.ink} />
+          <Bolt size={10} color={C.ink} />
           <Text style={S.tokenBadgeText}>{token.utility}</Text>
         </View>
         <Text style={S.tokenDate}>{token.date}</Text>
       </View>
       <Text style={S.tokenCode}>{token.token}</Text>
-      <View style={S.tokenFooter}>
+      <View style={S.tokenFoot}>
         <Text style={S.tokenMeta}>{money(token.amount)}</Text>
         <Text style={S.tokenMeta}>{token.units.toFixed(2)} units</Text>
-        <Clipboard size={14} color={C.t3} />
+        <Clipboard size={14} color={C.c3} />
       </View>
     </View>
   );
@@ -551,46 +553,48 @@ function BankRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ControlRow({ title, amount, owner, onChange }:
+function CtrlRow({ title, amount, owner, onChange }:
   { title: string; amount: number; owner: boolean; onChange: (v: boolean) => void }) {
   return (
     <View style={S.ctrlRow}>
       <View style={S.flex1}>
         <Text style={S.ctrlTitle}>{title}</Text>
-        <Text style={S.ctrlAmount}>{money(amount)}</Text>
+        <Text style={S.ctrlAmt}>{money(amount)}</Text>
       </View>
       <View style={S.toggle}>
-        <Pressable style={[S.toggleOpt, owner && S.toggleActive]} onPress={() => onChange(true)}>
-          <Text style={[S.toggleText, owner && S.toggleTextActive]}>Owner</Text>
+        <Pressable style={[S.toggleOpt, owner && S.toggleOn]} onPress={() => onChange(true)}>
+          <Text style={[S.toggleLabel, owner && S.toggleLabelOn]}>Owner</Text>
         </Pressable>
-        <Pressable style={[S.toggleOpt, !owner && S.toggleActive]} onPress={() => onChange(false)}>
-          <Text style={[S.toggleText, !owner && S.toggleTextActive]}>Tenant</Text>
+        <Pressable style={[S.toggleOpt, !owner && S.toggleOn]} onPress={() => onChange(false)}>
+          <Text style={[S.toggleLabel, !owner && S.toggleLabelOn]}>Tenant</Text>
         </Pressable>
       </View>
     </View>
   );
 }
 
-function PrimaryBtn({ label, icon: Icon }: { label: string; icon: React.ElementType }) {
+function GreenBtn({ label, icon: Icon }: { label: string; icon: React.ElementType }) {
   return (
-    <Pressable style={S.primaryBtn}>
-      <Text style={S.primaryBtnText}>{label}</Text>
+    <Pressable style={S.greenBtn}>
+      <Text style={S.greenBtnText}>{label}</Text>
       <Icon size={17} color={C.ink} />
     </Pressable>
   );
 }
 
 /* ─── Styles ──────────────────────────────────────────────────────────── */
-const GLASS = {
-  backgroundColor: C.glass,
-  borderWidth: 1,
-  borderColor: C.border,
-  backdropFilter: "blur(24px)",
-  WebkitBackdropFilter: "blur(24px)",
+
+/* White card shadow — subtle depth on dark green bg */
+const CARD_SHADOW = {
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 12,
+  elevation: 4,
 } as const;
 
 const S = {
-  /* ── Shell ── */
+  /* Shell */
   app: {
     flex: 1,
     backgroundColor: "transparent",
@@ -602,28 +606,21 @@ const S = {
     top: -160, left: -100,
     width: 380, height: 380,
     borderRadius: 999,
-    backgroundColor: "rgba(88,104,255,0.15)",
+    backgroundColor: "rgba(0,180,70,0.12)",
   },
   orb2: {
     position: "absolute" as const,
-    top: -80, right: -130,
+    bottom: 60, right: -120,
     width: 300, height: 300,
     borderRadius: 999,
-    backgroundColor: "rgba(0,211,155,0.1)",
-  },
-  orb3: {
-    position: "absolute" as const,
-    bottom: 80, left: -80,
-    width: 250, height: 250,
-    borderRadius: 999,
-    backgroundColor: "rgba(139,92,246,0.08)",
+    backgroundColor: "rgba(0,100,40,0.1)",
   },
 
-  /* ── Header ── */
+  /* Header */
   header: {
     paddingTop: 54,
     paddingHorizontal: 22,
-    paddingBottom: 14,
+    paddingBottom: 16,
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
     alignItems: "center" as const,
@@ -631,7 +628,6 @@ const S = {
   },
   eyebrow: {
     color: C.t3,
-    fontFamily: "Manrope",
     fontWeight: "800" as const,
     fontSize: 11,
     letterSpacing: 1.4,
@@ -646,12 +642,13 @@ const S = {
     letterSpacing: -0.3,
   },
   bellBtn: {
-    width: 44,
-    height: 44,
+    width: 44, height: 44,
     borderRadius: 16,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    ...GLASS,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
   },
   bellDot: {
     position: "absolute" as const,
@@ -661,7 +658,7 @@ const S = {
     backgroundColor: C.red,
   },
 
-  /* ── Toast ── */
+  /* Toast */
   toast: {
     position: "absolute" as const,
     zIndex: 10,
@@ -673,20 +670,15 @@ const S = {
     borderRadius: 999,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: C.lime,
-    backdropFilter: "blur(12px)",
+    backgroundColor: C.green,
   },
-  toastText: {
-    color: C.ink,
-    fontWeight: "900" as const,
-    fontSize: 13,
-  },
+  toastText: { color: C.ink, fontWeight: "900" as const, fontSize: 13 },
 
-  /* ── Scroll ── */
+  /* Scroll */
   scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: 18,
-    paddingTop: 4,
+    paddingTop: 2,
     paddingBottom: 110,
     gap: 12,
   },
@@ -694,57 +686,28 @@ const S = {
   flex1: { flex: 1 },
   alignRight: { alignItems: "flex-end" as const },
 
-  /* ── Hero card ── */
-  heroCard: {
-    borderRadius: 28,
-    padding: 22,
-    overflow: "hidden" as const,
-    position: "relative" as const,
-    backgroundColor: "rgba(10,20,44,0.85)",
-    borderWidth: 1,
-    borderColor: C.borderLime,
-    backdropFilter: "blur(40px)",
-    WebkitBackdropFilter: "blur(40px)",
-    minHeight: 210,
-  },
-  heroGlow: {
-    position: "absolute" as const,
-    bottom: -60, right: -60,
-    width: 200, height: 200,
-    borderRadius: 999,
-    backgroundColor: "rgba(201,255,87,0.08)",
-  },
-  heroTop: {
-    flexDirection: "row" as const,
-    justifyContent: "space-between" as const,
-    alignItems: "flex-start" as const,
+  /* ── Hero (on dark bg, no card border) ── */
+  hero: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
   heroLabel: {
     color: C.t3,
     fontWeight: "800" as const,
     fontSize: 12,
     textTransform: "uppercase" as const,
-    letterSpacing: 0.8,
+    letterSpacing: 0.9,
   },
   heroAmount: {
     marginTop: 6,
-    color: C.lime,
+    color: C.t1,
     fontFamily: "Space Grotesk",
-    fontSize: 50,
+    fontSize: 52,
     fontWeight: "700" as const,
     letterSpacing: -1,
   },
-  heroIconWrap: {
-    width: 48, height: 48,
-    borderRadius: 16,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    backgroundColor: "rgba(201,255,87,0.12)",
-    borderWidth: 1,
-    borderColor: C.borderLime,
-  },
   refPill: {
-    marginTop: 20,
+    marginTop: 16,
     alignSelf: "flex-start" as const,
     flexDirection: "row" as const,
     alignItems: "center" as const,
@@ -752,7 +715,9 @@ const S = {
     borderRadius: 999,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    ...GLASS,
+    backgroundColor: "rgba(255,255,255,0.09)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.14)",
   },
   refLabel: {
     color: C.t3,
@@ -768,51 +733,49 @@ const S = {
     fontSize: 14,
   },
   heroStats: {
-    marginTop: 22,
+    marginTop: 20,
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
   },
-  progressTrack: {
-    marginTop: 12,
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    overflow: "hidden" as const,
-  },
-  progressFill: {
-    width: "6%",
-    height: 4,
-    borderRadius: 999,
-    backgroundColor: C.lime,
-  },
-
-  /* ── Metrics ── */
-  metricLabel: {
+  heroStatLabel: {
     color: C.t3,
     fontSize: 10,
     fontWeight: "800" as const,
     textTransform: "uppercase" as const,
     letterSpacing: 0.7,
   },
-  metricValue: {
+  heroStatValue: {
     marginTop: 4,
     color: C.t1,
     fontFamily: "Space Grotesk",
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700" as const,
   },
-
-  /* ── Quick-action dock ── */
-  dock: {
-    flexDirection: "row" as const,
-    gap: 10,
+  progressTrack: {
+    marginTop: 12,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    overflow: "hidden" as const,
   },
+  progressFill: {
+    width: "6%",
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: C.green,
+  },
+
+  /* ── Dock ── */
+  dock: { flexDirection: "row" as const, gap: 10 },
   actionBtn: {
     flex: 1,
-    borderRadius: 24,
+    borderRadius: 22,
     padding: 14,
-    minHeight: 126,
-    ...GLASS,
+    minHeight: 120,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+    ...CARD_SHADOW,
   },
   actionIcon: {
     width: 40, height: 40,
@@ -821,8 +784,8 @@ const S = {
     justifyContent: "center" as const,
   },
   actionSub: {
-    marginTop: 16,
-    color: C.t3,
+    marginTop: 14,
+    color: C.c3,
     fontSize: 10,
     fontWeight: "900" as const,
     textTransform: "uppercase" as const,
@@ -830,293 +793,172 @@ const S = {
   },
   actionLabel: {
     marginTop: 2,
-    color: C.t1,
+    color: C.c1,
     fontFamily: "Space Grotesk",
     fontSize: 16,
     fontWeight: "700" as const,
   },
 
-  /* ── Alert / lock ── */
+  /* ── Alert ── */
   alertCard: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: 12,
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 14,
-    backgroundColor: "rgba(255,107,88,0.1)",
+    backgroundColor: C.redBg,
     borderWidth: 1,
-    borderColor: C.borderRed,
-    backdropFilter: "blur(20px)",
+    borderColor: C.redBorder,
   },
-  alertIconWrap: {
-    width: 36, height: 36,
-    borderRadius: 12,
+  alertIcon: {
+    width: 34, height: 34,
+    borderRadius: 11,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    backgroundColor: "rgba(255,107,88,0.2)",
+    backgroundColor: "rgba(255,59,92,0.15)",
   },
-  alertTitle: {
-    color: C.t1,
-    fontWeight: "900" as const,
-    fontSize: 14,
-  },
-  alertBody: {
-    marginTop: 2,
-    color: "rgba(255,170,150,0.85)",
-    fontWeight: "700" as const,
-    fontSize: 12,
-  },
+  alertTitle: { color: C.red, fontWeight: "900" as const, fontSize: 14 },
+  alertBody:  { marginTop: 2, color: "#c0334e", fontWeight: "700" as const, fontSize: 12 },
 
   /* ── Section header ── */
-  sectionHeader: {
+  sectionHead: {
     marginTop: 4,
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
     alignItems: "center" as const,
   },
-  sectionTitle: {
-    color: C.t1,
-    fontFamily: "Space Grotesk",
-    fontSize: 20,
-    fontWeight: "700" as const,
-  },
-  sectionAction: {
-    color: C.lime,
-    fontWeight: "900" as const,
-    fontSize: 14,
-  },
+  sectionTitle: { color: C.t1, fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700" as const },
+  sectionAction: { color: C.green, fontWeight: "900" as const, fontSize: 14 },
 
-  /* ── Token card ── */
-  tokenCard: {
-    borderRadius: 24,
+  /* ── White card ── */
+  card: {
+    borderRadius: 22,
     padding: 18,
-    ...GLASS,
-  },
-  tokenHeader: {
-    flexDirection: "row" as const,
-    justifyContent: "space-between" as const,
-    alignItems: "center" as const,
-  },
-  tokenBadge: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 5,
-    borderRadius: 999,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    backgroundColor: C.lime,
-  },
-  tokenBadgeText: {
-    color: C.ink,
-    fontWeight: "900" as const,
-    fontSize: 11,
-  },
-  tokenDate: {
-    color: C.t3,
-    fontWeight: "800" as const,
-    fontSize: 12,
-  },
-  tokenCode: {
-    marginTop: 14,
-    color: C.t1,
-    fontFamily: "Space Grotesk",
-    fontSize: 22,
-    fontWeight: "700" as const,
-    letterSpacing: 0.5,
-  },
-  tokenFooter: {
-    marginTop: 14,
-    flexDirection: "row" as const,
-    justifyContent: "space-between" as const,
-    alignItems: "center" as const,
-  },
-  tokenMeta: {
-    color: C.t3,
-    fontWeight: "800" as const,
-    fontSize: 12,
-  },
-
-  /* ── Glass card (generic) ── */
-  glassCard: {
-    borderRadius: 24,
-    padding: 20,
-    ...GLASS,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+    ...CARD_SHADOW,
   },
   cardLabel: {
-    color: C.t3,
+    color: C.c3,
     fontWeight: "900" as const,
     fontSize: 11,
     textTransform: "uppercase" as const,
     letterSpacing: 0.8,
   },
   cardTitle: {
-    color: C.t1,
+    color: C.c1,
     fontFamily: "Space Grotesk",
     fontWeight: "700" as const,
     fontSize: 18,
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  bigAmount: {
-    marginTop: 6,
-    color: C.t1,
+  bigNumber: {
+    marginTop: 4,
+    color: C.c1,
     fontFamily: "Space Grotesk",
     fontSize: 44,
     fontWeight: "700" as const,
     letterSpacing: -0.5,
   },
 
+  /* Metrics on white card */
+  metricLabel: { color: C.c3, fontSize: 10, fontWeight: "800" as const, textTransform: "uppercase" as const, letterSpacing: 0.7 },
+  metricValue: { marginTop: 4, color: C.c1, fontFamily: "Space Grotesk", fontSize: 18, fontWeight: "700" as const },
+
   /* ── Chips ── */
-  chipRow: {
-    marginTop: 18,
-    flexDirection: "row" as const,
-    flexWrap: "wrap" as const,
-    gap: 8,
-  },
+  chipRow: { marginTop: 16, flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 8 },
   chip: {
     borderRadius: 999,
     paddingVertical: 9,
     paddingHorizontal: 16,
-    backgroundColor: C.glass,
+    backgroundColor: C.cardAlt,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "rgba(6,26,10,0.1)",
   },
-  chipActive: {
-    backgroundColor: C.lime,
-    borderColor: C.lime,
-  },
-  chipText: {
-    color: C.t2,
-    fontWeight: "900" as const,
-    fontSize: 13,
-  },
-  chipTextActive: {
-    color: C.ink,
-  },
+  chipActive: { backgroundColor: C.green, borderColor: C.green },
+  chipText: { color: C.c2, fontWeight: "900" as const, fontSize: 13 },
+  chipTextActive: { color: C.ink },
 
-  /* ── Payment method row ── */
+  /* ── Payment method rows ── */
   methodRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: 14,
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 14,
-    minHeight: 68,
-    ...GLASS,
+    minHeight: 66,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+    ...CARD_SHADOW,
   },
-  methodRowActive: {
-    borderColor: C.borderLime,
-    backgroundColor: "rgba(201,255,87,0.08)",
-  },
+  methodRowActive: { borderColor: C.green, borderWidth: 1.5 },
   methodIcon: {
     width: 40, height: 40,
-    borderRadius: 14,
+    borderRadius: 13,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    backgroundColor: C.glassMid,
+    backgroundColor: C.cardAlt,
   },
-  methodIconActive: {
-    backgroundColor: C.lime,
-  },
-  methodName: {
-    color: C.t1,
-    fontWeight: "900" as const,
-    fontSize: 14,
-  },
-  methodFee: {
-    marginTop: 2,
-    color: C.t3,
-    fontWeight: "700" as const,
-    fontSize: 12,
-  },
+  methodIconActive: { backgroundColor: C.green },
+  methodName: { color: C.c1, fontWeight: "900" as const, fontSize: 14 },
+  methodFee:  { marginTop: 2, color: C.c3, fontWeight: "700" as const, fontSize: 12 },
 
-  /* ── Bank details ── */
-  bankRow: {
-    flexDirection: "row" as const,
-    justifyContent: "space-between" as const,
-    paddingVertical: 4,
+  /* ── Bank rows ── */
+  bankRow: { flexDirection: "row" as const, justifyContent: "space-between" as const, paddingVertical: 5 },
+  bankLabel: { color: C.c3, fontWeight: "800" as const, fontSize: 13 },
+  bankValue: { color: C.c1, fontWeight: "900" as const, fontSize: 13 },
+  greenRow: {
+    marginTop: 8, borderRadius: 13, padding: 12,
+    flexDirection: "row" as const, justifyContent: "space-between" as const, alignItems: "center" as const,
+    backgroundColor: C.green,
   },
-  bankLabel: { color: C.t3, fontWeight: "800" as const, fontSize: 13 },
-  bankValue: { color: C.t1, fontWeight: "900" as const, fontSize: 13 },
-  limeRow: {
-    marginTop: 8,
-    borderRadius: 14,
-    padding: 12,
-    flexDirection: "row" as const,
-    justifyContent: "space-between" as const,
-    alignItems: "center" as const,
-    backgroundColor: C.lime,
-  },
-  limeRowText: { color: C.ink, fontWeight: "900" as const, fontSize: 13 },
+  greenRowText: { color: C.ink, fontWeight: "900" as const, fontSize: 13 },
 
   /* ── Checkout ── */
-  checkoutCard: {
-    borderRadius: 24,
-    padding: 18,
-    ...GLASS,
-    gap: 0,
-  },
-  checkoutRow: {
-    flexDirection: "row" as const,
-    justifyContent: "space-between" as const,
-    marginBottom: 14,
-  },
-  checkoutDivider: {
-    height: 1,
-    backgroundColor: C.border,
-    marginBottom: 14,
-  },
-  checkoutTotalRow: {
+  checkoutMetrics: { flexDirection: "row" as const, justifyContent: "space-between" as const, marginBottom: 14 },
+  divider: { height: 1, backgroundColor: C.cardBorder, marginBottom: 14 },
+  checkoutTotal: {
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
     alignItems: "center" as const,
     marginBottom: 16,
   },
-  checkoutTotalLabel: { color: C.t2, fontWeight: "900" as const, fontSize: 14 },
-  checkoutTotalValue: {
-    color: C.t1,
-    fontFamily: "Space Grotesk",
-    fontSize: 24,
-    fontWeight: "700" as const,
-  },
+  totalLabel: { color: C.c2, fontWeight: "900" as const, fontSize: 14 },
+  totalValue: { color: C.c1, fontFamily: "Space Grotesk", fontSize: 24, fontWeight: "700" as const },
 
-  /* ── Primary button ── */
-  primaryBtn: {
+  /* ── Green CTA button ── */
+  greenBtn: {
     height: 56,
-    borderRadius: 18,
+    borderRadius: 16,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     flexDirection: "row" as const,
     gap: 8,
-    backgroundColor: C.lime,
+    backgroundColor: C.green,
+    ...CARD_SHADOW,
   },
-  primaryBtnText: {
-    color: C.ink,
-    fontWeight: "900" as const,
-    fontSize: 15,
-  },
+  greenBtnText: { color: C.ink, fontWeight: "900" as const, fontSize: 15 },
 
   /* ── Amount input ── */
-  amountInput: {
+  numInput: {
     marginTop: 8,
-    height: 78,
-    borderRadius: 18,
-    paddingHorizontal: 18,
+    height: 76,
+    borderRadius: 16,
+    paddingHorizontal: 16,
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    backgroundColor: C.glassMid,
+    backgroundColor: C.cardAlt,
     borderWidth: 1,
-    borderColor: C.borderBright,
+    borderColor: "rgba(6,26,10,0.1)",
   },
-  amountCurrency: {
-    color: C.t3,
-    fontSize: 26,
-    fontWeight: "900" as const,
-  },
-  amountField: {
+  numCurrency: { color: C.c3, fontSize: 26, fontWeight: "900" as const },
+  numField: {
     flex: 1,
     outlineStyle: "none" as unknown as never,
     borderWidth: 0,
-    color: C.t1,
+    color: C.c1,
     fontFamily: "Space Grotesk",
     fontSize: 40,
     fontWeight: "700" as const,
@@ -1126,234 +968,191 @@ const S = {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: 10,
-    borderRadius: 14,
+    borderRadius: 13,
     padding: 14,
     marginTop: 0,
-    backgroundColor: "rgba(201,255,87,0.08)",
+    backgroundColor: C.greenDim,
     borderWidth: 1,
-    borderColor: C.borderLime,
+    borderColor: C.greenBorder,
   },
-  estimateLabel: { flex: 1, color: C.t2, fontWeight: "800" as const, fontSize: 13 },
-  estimateValue: {
-    color: C.lime,
-    fontFamily: "Space Grotesk",
-    fontSize: 20,
-    fontWeight: "700" as const,
-  },
+  estimateLabel: { flex: 1, color: C.c2, fontWeight: "800" as const, fontSize: 13 },
+  estimateValue: { color: C.green, fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700" as const },
 
   /* ── Segment toggle ── */
-  segment: {
+  seg: {
     flexDirection: "row" as const,
     gap: 4,
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 4,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: C.cardAlt,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "rgba(6,26,10,0.08)",
   },
   segItem: {
-    flex: 1,
-    height: 42,
-    borderRadius: 12,
+    flex: 1, height: 40,
+    borderRadius: 10,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     flexDirection: "row" as const,
     gap: 6,
   },
-  segItemActive: {
-    backgroundColor: C.lime,
-  },
-  segLabel: { color: C.t2, fontWeight: "900" as const, fontSize: 13 },
+  segItemActive: { backgroundColor: C.green },
+  segLabel: { color: C.c2, fontWeight: "900" as const, fontSize: 13 },
   segLabelActive: { color: C.ink },
 
-  /* ── Usage chart ── */
+  /* ── Chart ── */
   usageMetrics: {
     flexDirection: "row" as const,
     justifyContent: "space-between" as const,
-    marginTop: 18,
-    marginBottom: 8,
+    marginTop: 18, marginBottom: 10,
   },
   chart: {
-    height: 160,
+    height: 148,
     flexDirection: "row" as const,
     alignItems: "flex-end" as const,
     justifyContent: "space-between" as const,
-    marginTop: 8,
   },
-  chartCol: {
-    flex: 1,
-    height: "100%",
-    alignItems: "center" as const,
-    justifyContent: "flex-end" as const,
-    gap: 8,
-  },
+  chartCol: { flex: 1, height: "100%", alignItems: "center" as const, justifyContent: "flex-end" as const, gap: 7 },
   barTrack: {
-    flex: 1,
-    width: 20,
+    flex: 1, width: 18,
     justifyContent: "flex-end" as const,
     borderRadius: 999,
     overflow: "hidden" as const,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: C.cardAlt,
   },
-  bar: {
-    width: "100%",
-    borderRadius: 999,
-    backgroundColor: C.mint,
-  },
-  barLabel: { color: C.t3, fontWeight: "900" as const, fontSize: 11 },
+  bar: { width: "100%", borderRadius: 999, backgroundColor: C.green },
+  barLabel: { color: C.c3, fontWeight: "900" as const, fontSize: 11 },
 
   /* ── Insight card ── */
   insightCard: {
     flexDirection: "row" as const,
     gap: 12,
     alignItems: "center" as const,
-    borderRadius: 20,
-    padding: 16,
-    backgroundColor: "rgba(201,255,87,0.07)",
+    borderRadius: 18,
+    padding: 14,
+    backgroundColor: C.greenDim,
     borderWidth: 1,
-    borderColor: C.borderLime,
-    backdropFilter: "blur(20px)",
+    borderColor: C.greenBorder,
   },
   insightIcon: {
-    width: 36, height: 36,
-    borderRadius: 12,
+    width: 34, height: 34,
+    borderRadius: 11,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    backgroundColor: "rgba(201,255,87,0.15)",
+    backgroundColor: "rgba(0,212,98,0.2)",
   },
   insightTitle: { color: C.t1, fontWeight: "900" as const, fontSize: 14 },
-  insightBody: { marginTop: 2, color: C.t2, fontWeight: "700" as const, fontSize: 12 },
+  insightBody:  { marginTop: 2, color: C.t2, fontWeight: "700" as const, fontSize: 12 },
 
-  /* ── Ledger ── */
-  filterRow: {
+  /* ── Token card ── */
+  tokenHead: { flexDirection: "row" as const, justifyContent: "space-between" as const, alignItems: "center" as const },
+  tokenBadge: {
     flexDirection: "row" as const,
-    gap: 8,
-  },
-  filterActive: {
+    alignItems: "center" as const,
+    gap: 4,
     borderRadius: 999,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
+    paddingVertical: 5, paddingHorizontal: 10,
+    backgroundColor: C.green,
+  },
+  tokenBadgeText: { color: C.ink, fontWeight: "900" as const, fontSize: 11 },
+  tokenDate: { color: C.c3, fontWeight: "800" as const, fontSize: 12 },
+  tokenCode: { marginTop: 14, color: C.c1, fontFamily: "Space Grotesk", fontSize: 22, fontWeight: "700" as const, letterSpacing: 0.4 },
+  tokenFoot: { marginTop: 14, flexDirection: "row" as const, justifyContent: "space-between" as const, alignItems: "center" as const },
+  tokenMeta: { color: C.c3, fontWeight: "800" as const, fontSize: 12 },
+
+  /* ── Ledger filters ── */
+  filterRow: { flexDirection: "row" as const, gap: 8 },
+  filterActive: {
+    borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16,
     overflow: "hidden" as const,
-    color: C.ink,
-    backgroundColor: C.lime,
-    fontWeight: "900" as const,
-    fontSize: 13,
+    color: C.ink, backgroundColor: C.green,
+    fontWeight: "900" as const, fontSize: 13,
   },
   filterItem: {
-    borderRadius: 999,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
+    borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16,
     overflow: "hidden" as const,
     color: C.t2,
-    fontWeight: "900" as const,
-    fontSize: 13,
-    ...GLASS,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
+    fontWeight: "900" as const, fontSize: 13,
   },
+
+  /* ── Transaction rows ── */
   txRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: 12,
-    borderRadius: 20,
-    padding: 14,
-    ...GLASS,
-  },
-  txIcon: {
-    width: 40, height: 40,
-    borderRadius: 14,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  txIconIn:  { backgroundColor: C.lime },
-  txIconOut: { backgroundColor: C.amber },
-  txTitle: { color: C.t1, fontWeight: "900" as const, fontSize: 14 },
-  txSub: { marginTop: 2, color: C.t3, fontWeight: "700" as const, fontSize: 12 },
-  txRight: { alignItems: "flex-end" as const },
-  txAmount: { fontWeight: "900" as const, fontSize: 14 },
-  txAmountIn:  { color: C.lime },
-  txAmountOut: { color: C.t1 },
-  txDate: { marginTop: 2, color: C.t3, fontWeight: "700" as const, fontSize: 12 },
-
-  /* ── Control / profile ── */
-  profileCard: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 14,
-    borderRadius: 24,
-    padding: 18,
-    ...GLASS,
-  },
-  profileAvatar: {
-    width: 50, height: 50,
     borderRadius: 18,
-    backgroundColor: C.lime,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
+    padding: 14,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+    ...CARD_SHADOW,
   },
-  profileName: { color: C.t1, fontWeight: "900" as const, fontSize: 14 },
-  profileSub: { marginTop: 3, color: C.t3, fontWeight: "700" as const, fontSize: 12 },
+  txIcon: { width: 40, height: 40, borderRadius: 13, alignItems: "center" as const, justifyContent: "center" as const },
+  txIn:   { backgroundColor: C.green },
+  txOut:  { backgroundColor: C.amberBg, borderWidth: 1, borderColor: "rgba(255,159,0,0.2)" },
+  txTitle:  { color: C.c1, fontWeight: "900" as const, fontSize: 14 },
+  txSub:    { marginTop: 2, color: C.c3, fontWeight: "700" as const, fontSize: 12 },
+  txAmount: { fontWeight: "900" as const, fontSize: 14 },
+  txAmtIn:  { color: C.green },
+  txAmtOut: { color: C.c1 },
+  txDate:   { marginTop: 2, color: C.c3, fontWeight: "700" as const, fontSize: 12 },
+
+  /* ── Profile / Control ── */
+  avatar: { width: 48, height: 48, borderRadius: 16, backgroundColor: C.green, alignItems: "center" as const, justifyContent: "center" as const },
+  profileName: { color: C.c1, fontWeight: "900" as const, fontSize: 14 },
+  profileSub:  { marginTop: 3, color: C.c3, fontWeight: "700" as const, fontSize: 12 },
   ctrlRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: 12,
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 14,
-    ...GLASS,
+    backgroundColor: C.card,
+    borderWidth: 1,
+    borderColor: C.cardBorder,
+    ...CARD_SHADOW,
   },
-  ctrlTitle: { color: C.t1, fontWeight: "900" as const, fontSize: 14 },
-  ctrlAmount: { marginTop: 3, color: C.t3, fontWeight: "700" as const, fontSize: 12 },
+  ctrlTitle: { color: C.c1, fontWeight: "900" as const, fontSize: 14 },
+  ctrlAmt:   { marginTop: 3, color: C.c3, fontWeight: "700" as const, fontSize: 12 },
   toggle: {
     flexDirection: "row" as const,
     borderRadius: 999,
     padding: 3,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: C.cardAlt,
     borderWidth: 1,
-    borderColor: C.border,
+    borderColor: "rgba(6,26,10,0.1)",
   },
-  toggleOpt: {
-    borderRadius: 999,
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-  },
-  toggleActive: { backgroundColor: C.lime },
-  toggleText: { color: C.t3, fontWeight: "900" as const, fontSize: 11 },
-  toggleTextActive: { color: C.ink },
+  toggleOpt:     { borderRadius: 999, paddingVertical: 7, paddingHorizontal: 12 },
+  toggleOn:      { backgroundColor: C.green },
+  toggleLabel:   { color: C.c3, fontWeight: "900" as const, fontSize: 11 },
+  toggleLabelOn: { color: C.ink },
 
   /* ── Tab bar ── */
   tabBar: {
     position: "absolute" as const,
-    bottom: 14,
-    left: 14,
-    right: 14,
+    bottom: 14, left: 14, right: 14,
     height: 70,
     borderRadius: 26,
     flexDirection: "row" as const,
     padding: 6,
-    backgroundColor: "rgba(8,13,26,0.88)",
+    backgroundColor: "rgba(4,14,7,0.92)",
     borderWidth: 1,
-    borderColor: C.borderBright,
-    backdropFilter: "blur(30px)",
-    WebkitBackdropFilter: "blur(30px)",
+    borderColor: "rgba(0,212,98,0.18)",
+    backdropFilter: "blur(28px)",
+    WebkitBackdropFilter: "blur(28px)",
     zIndex: 20,
   },
-  tabItem: {
-    flex: 1,
-    borderRadius: 20,
+  tab: {
+    flex: 1, borderRadius: 20,
     alignItems: "center" as const,
     justifyContent: "center" as const,
     gap: 3,
   },
-  tabItemActive: {
-    backgroundColor: C.lime,
-  },
-  tabLabel: {
-    color: C.t3,
-    fontWeight: "900" as const,
-    fontSize: 10,
-    letterSpacing: 0.2,
-  },
-  tabLabelActive: {
-    color: C.ink,
-  },
+  tabActive: { backgroundColor: C.green },
+  tabLabel: { color: C.t3, fontWeight: "900" as const, fontSize: 10, letterSpacing: 0.2 },
+  tabLabelActive: { color: C.ink },
 };
 
 createRoot(document.getElementById("root")!).render(<App />);

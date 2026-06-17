@@ -17,11 +17,12 @@ body,
 body {
   font-family: Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
+  /* Deep forest green aurora — Chime-inspired */
   background:
-    radial-gradient(ellipse 120% 55% at 0% 5%, rgba(88, 104, 255, 0.28) 0%, transparent 55%),
-    radial-gradient(ellipse 90% 55% at 100% 0%, rgba(0, 211, 155, 0.2) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 80% at 55% 100%, rgba(139, 92, 246, 0.18) 0%, transparent 55%),
-    #080d1a;
+    radial-gradient(ellipse 110% 55% at 15% 0%,  rgba(0, 180, 70, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse 80%  50% at 85% 25%,  rgba(0, 120, 50, 0.16) 0%, transparent 55%),
+    radial-gradient(ellipse 70%  75% at 50% 100%, rgba(0, 80,  30, 0.12) 0%, transparent 55%),
+    #061a0a;
   background-attachment: fixed;
   overflow: hidden;
 }
@@ -32,20 +33,19 @@ body {
   overflow: hidden;
 }
 
-/* ── Desktop: show as a centred phone ── */
+/* ── Desktop: centred phone ── */
 @media (min-width: 520px) {
   body {
-    align-items: flex-start;
-    justify-content: center;
     display: flex;
+    justify-content: center;
+    align-items: flex-start;
   }
   #root {
     width: 390px;
     height: 100vh;
-    position: relative;
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.08),
-      0 32px 80px rgba(0, 0, 0, 0.7);
+      0 0 0 1px rgba(0, 212, 98, 0.12),
+      0 32px 80px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -69,14 +69,13 @@ input {
   font: inherit;
 }
 
-/* Smooth press feedback on all tappable elements */
 [role="button"] {
-  transition: opacity 0.14s ease, transform 0.12s ease;
+  transition: opacity 0.13s ease, transform 0.11s ease;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
 [role="button"]:active {
-  opacity: 0.78;
-  transform: scale(0.97);
+  opacity: 0.8;
+  transform: scale(0.975);
 }
