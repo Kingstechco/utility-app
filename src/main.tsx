@@ -28,45 +28,32 @@ type Screen = "home" | "recharge" | "buy" | "usage" | "ledger" | "control";
 type Utility = "Electricity" | "Water";
 type PaymentMethod = "Instant EFT" | "Card" | "Manual EFT" | "Retail";
 
-/* ─── Brand Tokens — Chime-inspired forest green palette ─────────────── */
+/* ─── Brand Tokens ────────────────────────────────────────────────────── */
 const C = {
-  /* Background (deep forest green) */
-  bg: "#061a0a",
+  /* Accent — lime green, the single brand colour */
+  lime:        "#c9ff57",
+  limeDim:     "rgba(201,255,87,0.12)",
+  limeBorder:  "rgba(201,255,87,0.25)",
 
-  /* Primary accent — bright green */
-  green:       "#00d462",
-  greenDim:    "rgba(0,212,98,0.12)",
-  greenBorder: "rgba(0,212,98,0.28)",
+  /* Elevated card surfaces (sit on top of the gradient bg) */
+  card:        "#152010",   /* primary card — dark green-tinted slate  */
+  cardHigh:    "#1c2d16",   /* slightly lighter for inputs / segments   */
+  cardBorder:  "rgba(255,255,255,0.07)",
 
-  /* White content cards */
-  card:       "#ffffff",
-  cardAlt:    "#f2f8f4",
-  cardBorder: "rgba(6,26,10,0.07)",
-
-  /* Text ON dark (hero / header areas) */
+  /* Text */
   t1: "#ffffff",
-  t2: "rgba(255,255,255,0.62)",
-  t3: "rgba(255,255,255,0.38)",
+  t2: "rgba(255,255,255,0.6)",
+  t3: "rgba(255,255,255,0.35)",
 
-  /* Text ON white cards */
-  c1: "#071a0c",   /* primary */
-  c2: "#3a6646",   /* secondary */
-  c3: "#7a9b82",   /* muted */
+  /* Semantic */
+  red:        "#ff4d6a",
+  redDim:     "rgba(255,77,106,0.12)",
+  redBorder:  "rgba(255,77,106,0.25)",
+  amber:      "#ffb340",
+  mint:       "#00d49a",
 
-  /* Semantic colours */
-  red:       "#ff3b5c",
-  redBg:     "#fff0f3",
-  redBorder: "rgba(255,59,92,0.2)",
-  amber:     "#ff9f00",
-  amberBg:   "#fff8ec",
-  blue:      "#0a84ff",
-
-  /* Glass surface (hero card / overlay) */
-  glass:       "rgba(255,255,255,0.07)",
-  glassBorder: "rgba(255,255,255,0.12)",
-
-  /* Used only ON coloured surfaces */
-  ink: "#061a0a",
+  /* Used only ON lime / coloured surfaces */
+  ink: "#071a0c",
 };
 
 /* ─── Data ────────────────────────────────────────────────────────────── */
@@ -130,10 +117,6 @@ function App() {
 
   return (
     <View style={S.app}>
-      {/* Ambient green orbs */}
-      <View style={S.orb1} />
-      <View style={S.orb2} />
-
       {/* Header */}
       <View style={S.header}>
         <View>
@@ -218,9 +201,9 @@ function HomeScreen({ setScreen, copyRef }: { setScreen: (s: Screen) => void; co
 
       {/* Quick-action dock */}
       <View style={S.dock}>
-        <ActionBtn label="Recharge" sub="Add funds" icon={Wallet}   tint={C.green} onPress={() => setScreen("recharge")} />
-        <ActionBtn label="Buy"      sub="Token"     icon={Bolt}     tint={C.blue}  onPress={() => setScreen("buy")}      />
-        <ActionBtn label="Pulse"    sub="Usage"     icon={LineChart} tint={C.amber} onPress={() => setScreen("usage")}   />
+        <ActionBtn label="Recharge" sub="Add funds" icon={Wallet}    tint={C.lime}  onPress={() => setScreen("recharge")} />
+        <ActionBtn label="Buy"      sub="Token"     icon={Bolt}      tint={C.mint}  onPress={() => setScreen("buy")}      />
+        <ActionBtn label="Pulse"    sub="Usage"     icon={LineChart}  tint={C.amber} onPress={() => setScreen("usage")}   />
       </View>
 
       {/* Alert */}
@@ -278,13 +261,13 @@ function RechargeScreen({ copyRef }: { copyRef: () => void }) {
               onPress={() => setMethod(item.name)}
             >
               <View style={[S.methodIcon, sel && S.methodIconActive]}>
-                <item.icon size={17} color={sel ? C.ink : C.c2} />
+                <item.icon size={17} color={sel ? C.ink : C.t2} />
               </View>
               <View style={S.flex1}>
                 <Text style={S.methodName}>{item.name}</Text>
                 <Text style={S.methodFee}>{item.fee}</Text>
               </View>
-              {sel && <Check size={16} color={C.green} />}
+              {sel && <Check size={16} color={C.lime} />}
             </Pressable>
           );
         })}
@@ -346,7 +329,7 @@ function BuyScreen() {
           />
         </View>
         <View style={S.estimateRow}>
-          <Gauge size={16} color={C.green} />
+          <Gauge size={16} color={C.lime} />
           <Text style={S.estimateLabel}>Estimated units</Text>
           <Text style={S.estimateValue}>{units.toFixed(2)}</Text>
         </View>
@@ -403,7 +386,7 @@ function UsageScreen() {
 
       <View style={S.insightCard}>
         <View style={S.insightIcon}>
-          <Sparkles size={15} color={C.green} />
+          <Sparkles size={15} color={C.lime} />
         </View>
         <View style={S.flex1}>
           <Text style={S.insightTitle}>Usage looks stable</Text>
@@ -493,7 +476,7 @@ function Seg({ options, active, onChange, icons }:
         const Icon = icons[opt];
         return (
           <Pressable key={opt} style={[S.segItem, on && S.segItemActive]} onPress={() => onChange(opt)}>
-            {Icon && <Icon size={15} color={on ? C.ink : C.c2} />}
+            {Icon && <Icon size={15} color={on ? C.ink : C.t2} />}
             <Text style={[S.segLabel, on && S.segLabelActive]}>{opt}</Text>
           </Pressable>
         );
@@ -538,7 +521,7 @@ function TokenCard({ token }: { token: (typeof tokens)[number] }) {
       <View style={S.tokenFoot}>
         <Text style={S.tokenMeta}>{money(token.amount)}</Text>
         <Text style={S.tokenMeta}>{token.units.toFixed(2)} units</Text>
-        <Clipboard size={14} color={C.c3} />
+        <Clipboard size={14} color={C.t3} />
       </View>
     </View>
   );
@@ -584,36 +567,13 @@ function GreenBtn({ label, icon: Icon }: { label: string; icon: React.ElementTyp
 
 /* ─── Styles ──────────────────────────────────────────────────────────── */
 
-/* White card shadow — subtle depth on dark green bg */
-const CARD_SHADOW = {
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 12,
-  elevation: 4,
-} as const;
-
 const S = {
-  /* Shell */
+  /* Shell — transparent so #root gradient shows through */
   app: {
     flex: 1,
     backgroundColor: "transparent",
     position: "relative" as const,
     overflow: "hidden" as const,
-  },
-  orb1: {
-    position: "absolute" as const,
-    top: -160, left: -100,
-    width: 380, height: 380,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,180,70,0.12)",
-  },
-  orb2: {
-    position: "absolute" as const,
-    bottom: 60, right: -120,
-    width: 300, height: 300,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,100,40,0.1)",
   },
 
   /* Header */
@@ -670,7 +630,7 @@ const S = {
     borderRadius: 999,
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: C.green,
+    backgroundColor: C.lime,
   },
   toastText: { color: C.ink, fontWeight: "900" as const, fontSize: 13 },
 
@@ -686,7 +646,7 @@ const S = {
   flex1: { flex: 1 },
   alignRight: { alignItems: "flex-end" as const },
 
-  /* ── Hero (on dark bg, no card border) ── */
+  /* ── Hero ── */
   hero: {
     paddingVertical: 8,
     paddingHorizontal: 4,
@@ -762,7 +722,7 @@ const S = {
     width: "6%",
     height: 4,
     borderRadius: 999,
-    backgroundColor: C.green,
+    backgroundColor: C.lime,
   },
 
   /* ── Dock ── */
@@ -775,7 +735,6 @@ const S = {
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.cardBorder,
-    ...CARD_SHADOW,
   },
   actionIcon: {
     width: 40, height: 40,
@@ -785,7 +744,7 @@ const S = {
   },
   actionSub: {
     marginTop: 14,
-    color: C.c3,
+    color: C.t3,
     fontSize: 10,
     fontWeight: "900" as const,
     textTransform: "uppercase" as const,
@@ -793,7 +752,7 @@ const S = {
   },
   actionLabel: {
     marginTop: 2,
-    color: C.c1,
+    color: C.t1,
     fontFamily: "Space Grotesk",
     fontSize: 16,
     fontWeight: "700" as const,
@@ -806,7 +765,7 @@ const S = {
     gap: 12,
     borderRadius: 18,
     padding: 14,
-    backgroundColor: C.redBg,
+    backgroundColor: C.redDim,
     borderWidth: 1,
     borderColor: C.redBorder,
   },
@@ -818,7 +777,7 @@ const S = {
     backgroundColor: "rgba(255,59,92,0.15)",
   },
   alertTitle: { color: C.red, fontWeight: "900" as const, fontSize: 14 },
-  alertBody:  { marginTop: 2, color: "#c0334e", fontWeight: "700" as const, fontSize: 12 },
+  alertBody:  { marginTop: 2, color: "#ff8099", fontWeight: "700" as const, fontSize: 12 },
 
   /* ── Section header ── */
   sectionHead: {
@@ -828,26 +787,25 @@ const S = {
     alignItems: "center" as const,
   },
   sectionTitle: { color: C.t1, fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700" as const },
-  sectionAction: { color: C.green, fontWeight: "900" as const, fontSize: 14 },
+  sectionAction: { color: C.lime, fontWeight: "900" as const, fontSize: 14 },
 
-  /* ── White card ── */
+  /* ── Card ── */
   card: {
     borderRadius: 22,
     padding: 18,
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.cardBorder,
-    ...CARD_SHADOW,
   },
   cardLabel: {
-    color: C.c3,
+    color: C.t3,
     fontWeight: "900" as const,
     fontSize: 11,
     textTransform: "uppercase" as const,
     letterSpacing: 0.8,
   },
   cardTitle: {
-    color: C.c1,
+    color: C.t1,
     fontFamily: "Space Grotesk",
     fontWeight: "700" as const,
     fontSize: 18,
@@ -855,16 +813,16 @@ const S = {
   },
   bigNumber: {
     marginTop: 4,
-    color: C.c1,
+    color: C.t1,
     fontFamily: "Space Grotesk",
     fontSize: 44,
     fontWeight: "700" as const,
     letterSpacing: -0.5,
   },
 
-  /* Metrics on white card */
-  metricLabel: { color: C.c3, fontSize: 10, fontWeight: "800" as const, textTransform: "uppercase" as const, letterSpacing: 0.7 },
-  metricValue: { marginTop: 4, color: C.c1, fontFamily: "Space Grotesk", fontSize: 18, fontWeight: "700" as const },
+  /* Metrics */
+  metricLabel: { color: C.t3, fontSize: 10, fontWeight: "800" as const, textTransform: "uppercase" as const, letterSpacing: 0.7 },
+  metricValue: { marginTop: 4, color: C.t1, fontFamily: "Space Grotesk", fontSize: 18, fontWeight: "700" as const },
 
   /* ── Chips ── */
   chipRow: { marginTop: 16, flexDirection: "row" as const, flexWrap: "wrap" as const, gap: 8 },
@@ -872,12 +830,12 @@ const S = {
     borderRadius: 999,
     paddingVertical: 9,
     paddingHorizontal: 16,
-    backgroundColor: C.cardAlt,
+    backgroundColor: C.cardHigh,
     borderWidth: 1,
-    borderColor: "rgba(6,26,10,0.1)",
+    borderColor: C.cardBorder,
   },
-  chipActive: { backgroundColor: C.green, borderColor: C.green },
-  chipText: { color: C.c2, fontWeight: "900" as const, fontSize: 13 },
+  chipActive: { backgroundColor: C.lime, borderColor: C.lime },
+  chipText: { color: C.t2, fontWeight: "900" as const, fontSize: 13 },
   chipTextActive: { color: C.ink },
 
   /* ── Payment method rows ── */
@@ -891,28 +849,27 @@ const S = {
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.cardBorder,
-    ...CARD_SHADOW,
   },
-  methodRowActive: { borderColor: C.green, borderWidth: 1.5 },
+  methodRowActive: { borderColor: C.lime, borderWidth: 1.5 },
   methodIcon: {
     width: 40, height: 40,
     borderRadius: 13,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    backgroundColor: C.cardAlt,
+    backgroundColor: C.cardHigh,
   },
-  methodIconActive: { backgroundColor: C.green },
-  methodName: { color: C.c1, fontWeight: "900" as const, fontSize: 14 },
-  methodFee:  { marginTop: 2, color: C.c3, fontWeight: "700" as const, fontSize: 12 },
+  methodIconActive: { backgroundColor: C.lime },
+  methodName: { color: C.t1, fontWeight: "900" as const, fontSize: 14 },
+  methodFee:  { marginTop: 2, color: C.t3, fontWeight: "700" as const, fontSize: 12 },
 
   /* ── Bank rows ── */
   bankRow: { flexDirection: "row" as const, justifyContent: "space-between" as const, paddingVertical: 5 },
-  bankLabel: { color: C.c3, fontWeight: "800" as const, fontSize: 13 },
-  bankValue: { color: C.c1, fontWeight: "900" as const, fontSize: 13 },
+  bankLabel: { color: C.t3, fontWeight: "800" as const, fontSize: 13 },
+  bankValue: { color: C.t1, fontWeight: "900" as const, fontSize: 13 },
   greenRow: {
     marginTop: 8, borderRadius: 13, padding: 12,
     flexDirection: "row" as const, justifyContent: "space-between" as const, alignItems: "center" as const,
-    backgroundColor: C.green,
+    backgroundColor: C.lime,
   },
   greenRowText: { color: C.ink, fontWeight: "900" as const, fontSize: 13 },
 
@@ -925,10 +882,10 @@ const S = {
     alignItems: "center" as const,
     marginBottom: 16,
   },
-  totalLabel: { color: C.c2, fontWeight: "900" as const, fontSize: 14 },
-  totalValue: { color: C.c1, fontFamily: "Space Grotesk", fontSize: 24, fontWeight: "700" as const },
+  totalLabel: { color: C.t2, fontWeight: "900" as const, fontSize: 14 },
+  totalValue: { color: C.t1, fontFamily: "Space Grotesk", fontSize: 24, fontWeight: "700" as const },
 
-  /* ── Green CTA button ── */
+  /* ── Lime CTA button ── */
   greenBtn: {
     height: 56,
     borderRadius: 16,
@@ -936,8 +893,7 @@ const S = {
     justifyContent: "center" as const,
     flexDirection: "row" as const,
     gap: 8,
-    backgroundColor: C.green,
-    ...CARD_SHADOW,
+    backgroundColor: C.lime,
   },
   greenBtnText: { color: C.ink, fontWeight: "900" as const, fontSize: 15 },
 
@@ -949,16 +905,16 @@ const S = {
     paddingHorizontal: 16,
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    backgroundColor: C.cardAlt,
+    backgroundColor: C.cardHigh,
     borderWidth: 1,
-    borderColor: "rgba(6,26,10,0.1)",
+    borderColor: C.cardBorder,
   },
-  numCurrency: { color: C.c3, fontSize: 26, fontWeight: "900" as const },
+  numCurrency: { color: C.t3, fontSize: 26, fontWeight: "900" as const },
   numField: {
     flex: 1,
     outlineStyle: "none" as unknown as never,
     borderWidth: 0,
-    color: C.c1,
+    color: C.t1,
     fontFamily: "Space Grotesk",
     fontSize: 40,
     fontWeight: "700" as const,
@@ -971,12 +927,12 @@ const S = {
     borderRadius: 13,
     padding: 14,
     marginTop: 0,
-    backgroundColor: C.greenDim,
+    backgroundColor: C.limeDim,
     borderWidth: 1,
-    borderColor: C.greenBorder,
+    borderColor: C.limeBorder,
   },
-  estimateLabel: { flex: 1, color: C.c2, fontWeight: "800" as const, fontSize: 13 },
-  estimateValue: { color: C.green, fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700" as const },
+  estimateLabel: { flex: 1, color: C.t2, fontWeight: "800" as const, fontSize: 13 },
+  estimateValue: { color: C.lime, fontFamily: "Space Grotesk", fontSize: 20, fontWeight: "700" as const },
 
   /* ── Segment toggle ── */
   seg: {
@@ -984,9 +940,9 @@ const S = {
     gap: 4,
     borderRadius: 14,
     padding: 4,
-    backgroundColor: C.cardAlt,
+    backgroundColor: C.cardHigh,
     borderWidth: 1,
-    borderColor: "rgba(6,26,10,0.08)",
+    borderColor: C.cardBorder,
   },
   segItem: {
     flex: 1, height: 40,
@@ -996,8 +952,8 @@ const S = {
     flexDirection: "row" as const,
     gap: 6,
   },
-  segItemActive: { backgroundColor: C.green },
-  segLabel: { color: C.c2, fontWeight: "900" as const, fontSize: 13 },
+  segItemActive: { backgroundColor: C.lime },
+  segLabel: { color: C.t2, fontWeight: "900" as const, fontSize: 13 },
   segLabelActive: { color: C.ink },
 
   /* ── Chart ── */
@@ -1018,10 +974,10 @@ const S = {
     justifyContent: "flex-end" as const,
     borderRadius: 999,
     overflow: "hidden" as const,
-    backgroundColor: C.cardAlt,
+    backgroundColor: C.cardHigh,
   },
-  bar: { width: "100%", borderRadius: 999, backgroundColor: C.green },
-  barLabel: { color: C.c3, fontWeight: "900" as const, fontSize: 11 },
+  bar: { width: "100%", borderRadius: 999, backgroundColor: C.lime },
+  barLabel: { color: C.t3, fontWeight: "900" as const, fontSize: 11 },
 
   /* ── Insight card ── */
   insightCard: {
@@ -1030,16 +986,16 @@ const S = {
     alignItems: "center" as const,
     borderRadius: 18,
     padding: 14,
-    backgroundColor: C.greenDim,
+    backgroundColor: C.limeDim,
     borderWidth: 1,
-    borderColor: C.greenBorder,
+    borderColor: C.limeBorder,
   },
   insightIcon: {
     width: 34, height: 34,
     borderRadius: 11,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    backgroundColor: "rgba(0,212,98,0.2)",
+    backgroundColor: "rgba(201,255,87,0.15)",
   },
   insightTitle: { color: C.t1, fontWeight: "900" as const, fontSize: 14 },
   insightBody:  { marginTop: 2, color: C.t2, fontWeight: "700" as const, fontSize: 12 },
@@ -1052,28 +1008,28 @@ const S = {
     gap: 4,
     borderRadius: 999,
     paddingVertical: 5, paddingHorizontal: 10,
-    backgroundColor: C.green,
+    backgroundColor: C.lime,
   },
   tokenBadgeText: { color: C.ink, fontWeight: "900" as const, fontSize: 11 },
-  tokenDate: { color: C.c3, fontWeight: "800" as const, fontSize: 12 },
-  tokenCode: { marginTop: 14, color: C.c1, fontFamily: "Space Grotesk", fontSize: 22, fontWeight: "700" as const, letterSpacing: 0.4 },
+  tokenDate: { color: C.t3, fontWeight: "800" as const, fontSize: 12 },
+  tokenCode: { marginTop: 14, color: C.t1, fontFamily: "Space Grotesk", fontSize: 22, fontWeight: "700" as const, letterSpacing: 0.4 },
   tokenFoot: { marginTop: 14, flexDirection: "row" as const, justifyContent: "space-between" as const, alignItems: "center" as const },
-  tokenMeta: { color: C.c3, fontWeight: "800" as const, fontSize: 12 },
+  tokenMeta: { color: C.t3, fontWeight: "800" as const, fontSize: 12 },
 
   /* ── Ledger filters ── */
   filterRow: { flexDirection: "row" as const, gap: 8 },
   filterActive: {
     borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16,
     overflow: "hidden" as const,
-    color: C.ink, backgroundColor: C.green,
+    color: C.ink, backgroundColor: C.lime,
     fontWeight: "900" as const, fontSize: 13,
   },
   filterItem: {
     borderRadius: 999, paddingVertical: 8, paddingHorizontal: 16,
     overflow: "hidden" as const,
     color: C.t2,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: C.cardHigh,
+    borderWidth: 1, borderColor: C.cardBorder,
     fontWeight: "900" as const, fontSize: 13,
   },
 
@@ -1087,22 +1043,21 @@ const S = {
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.cardBorder,
-    ...CARD_SHADOW,
   },
   txIcon: { width: 40, height: 40, borderRadius: 13, alignItems: "center" as const, justifyContent: "center" as const },
-  txIn:   { backgroundColor: C.green },
-  txOut:  { backgroundColor: C.amberBg, borderWidth: 1, borderColor: "rgba(255,159,0,0.2)" },
-  txTitle:  { color: C.c1, fontWeight: "900" as const, fontSize: 14 },
-  txSub:    { marginTop: 2, color: C.c3, fontWeight: "700" as const, fontSize: 12 },
+  txIn:   { backgroundColor: C.lime },
+  txOut:  { backgroundColor: "rgba(255,179,64,0.15)", borderWidth: 1, borderColor: "rgba(255,179,64,0.25)" },
+  txTitle:  { color: C.t1, fontWeight: "900" as const, fontSize: 14 },
+  txSub:    { marginTop: 2, color: C.t3, fontWeight: "700" as const, fontSize: 12 },
   txAmount: { fontWeight: "900" as const, fontSize: 14 },
-  txAmtIn:  { color: C.green },
-  txAmtOut: { color: C.c1 },
-  txDate:   { marginTop: 2, color: C.c3, fontWeight: "700" as const, fontSize: 12 },
+  txAmtIn:  { color: C.lime },
+  txAmtOut: { color: C.t1 },
+  txDate:   { marginTop: 2, color: C.t3, fontWeight: "700" as const, fontSize: 12 },
 
   /* ── Profile / Control ── */
-  avatar: { width: 48, height: 48, borderRadius: 16, backgroundColor: C.green, alignItems: "center" as const, justifyContent: "center" as const },
-  profileName: { color: C.c1, fontWeight: "900" as const, fontSize: 14 },
-  profileSub:  { marginTop: 3, color: C.c3, fontWeight: "700" as const, fontSize: 12 },
+  avatar: { width: 48, height: 48, borderRadius: 16, backgroundColor: C.lime, alignItems: "center" as const, justifyContent: "center" as const },
+  profileName: { color: C.t1, fontWeight: "900" as const, fontSize: 14 },
+  profileSub:  { marginTop: 3, color: C.t3, fontWeight: "700" as const, fontSize: 12 },
   ctrlRow: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
@@ -1112,21 +1067,20 @@ const S = {
     backgroundColor: C.card,
     borderWidth: 1,
     borderColor: C.cardBorder,
-    ...CARD_SHADOW,
   },
-  ctrlTitle: { color: C.c1, fontWeight: "900" as const, fontSize: 14 },
-  ctrlAmt:   { marginTop: 3, color: C.c3, fontWeight: "700" as const, fontSize: 12 },
+  ctrlTitle: { color: C.t1, fontWeight: "900" as const, fontSize: 14 },
+  ctrlAmt:   { marginTop: 3, color: C.t3, fontWeight: "700" as const, fontSize: 12 },
   toggle: {
     flexDirection: "row" as const,
     borderRadius: 999,
     padding: 3,
-    backgroundColor: C.cardAlt,
+    backgroundColor: C.cardHigh,
     borderWidth: 1,
-    borderColor: "rgba(6,26,10,0.1)",
+    borderColor: C.cardBorder,
   },
   toggleOpt:     { borderRadius: 999, paddingVertical: 7, paddingHorizontal: 12 },
-  toggleOn:      { backgroundColor: C.green },
-  toggleLabel:   { color: C.c3, fontWeight: "900" as const, fontSize: 11 },
+  toggleOn:      { backgroundColor: C.lime },
+  toggleLabel:   { color: C.t3, fontWeight: "900" as const, fontSize: 11 },
   toggleLabelOn: { color: C.ink },
 
   /* ── Tab bar ── */
@@ -1139,7 +1093,7 @@ const S = {
     padding: 6,
     backgroundColor: "rgba(4,14,7,0.92)",
     borderWidth: 1,
-    borderColor: "rgba(0,212,98,0.18)",
+    borderColor: C.limeBorder,
     backdropFilter: "blur(28px)",
     WebkitBackdropFilter: "blur(28px)",
     zIndex: 20,
@@ -1150,7 +1104,7 @@ const S = {
     justifyContent: "center" as const,
     gap: 3,
   },
-  tabActive: { backgroundColor: C.green },
+  tabActive: { backgroundColor: C.lime },
   tabLabel: { color: C.t3, fontWeight: "900" as const, fontSize: 10, letterSpacing: 0.2 },
   tabLabelActive: { color: C.ink },
 };

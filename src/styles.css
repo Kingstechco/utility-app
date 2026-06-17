@@ -14,16 +14,12 @@ body,
   padding: 0;
 }
 
+/* body matches the darkest edge of the app gradient so desktop
+   chrome around the phone frame never shows a different colour */
 body {
-  font-family: Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
-  /* Deep forest green aurora — Chime-inspired */
-  background:
-    radial-gradient(ellipse 110% 55% at 15% 0%,  rgba(0, 180, 70, 0.22) 0%, transparent 55%),
-    radial-gradient(ellipse 80%  50% at 85% 25%,  rgba(0, 120, 50, 0.16) 0%, transparent 55%),
-    radial-gradient(ellipse 70%  75% at 50% 100%, rgba(0, 80,  30, 0.12) 0%, transparent 55%),
-    #061a0a;
-  background-attachment: fixed;
+  font-family: Manrope, ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #040e08;
   overflow: hidden;
 }
 
@@ -31,9 +27,15 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Green-energy gradient: dark base → electric green pulse at top */
+  background:
+    radial-gradient(ellipse 90% 45% at 50% 0%,   rgba(0, 210, 90, 0.18) 0%, transparent 65%),
+    radial-gradient(ellipse 60% 35% at 10% 60%,  rgba(0, 180, 60, 0.10) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 90% 80%,  rgba(20, 160, 70, 0.08) 0%, transparent 60%),
+    linear-gradient(175deg, #071a0d 0%, #0a1520 55%, #060e1a 100%);
 }
 
-/* ── Desktop: centred phone ── */
+/* Desktop — centred phone; body's #040e08 fills the outer canvas */
 @media (min-width: 520px) {
   body {
     display: flex;
@@ -43,13 +45,13 @@ body {
   #root {
     width: 390px;
     height: 100vh;
-    box-shadow:
-      0 0 0 1px rgba(0, 212, 98, 0.12),
-      0 32px 80px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06),
+                0 40px 80px rgba(0, 0, 0, 0.6);
+    border-radius: 2px;
   }
 }
 
-/* ── Mobile: true full-screen ── */
+/* Mobile — true full-screen */
 @media (max-width: 519px) {
   #root {
     width: 100%;
@@ -57,17 +59,10 @@ body {
   }
 }
 
-* {
-  scrollbar-width: none;
-}
-*::-webkit-scrollbar {
-  display: none;
-}
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
 
-button,
-input {
-  font: inherit;
-}
+button, input { font: inherit; }
 
 [role="button"] {
   transition: opacity 0.13s ease, transform 0.11s ease;
@@ -76,6 +71,6 @@ input {
   user-select: none;
 }
 [role="button"]:active {
-  opacity: 0.8;
+  opacity: 0.78;
   transform: scale(0.975);
 }
